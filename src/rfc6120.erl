@@ -5,11 +5,6 @@
 
 -compile(export_all).
 
-do_decode(<<"json-message">>,
-          <<"http://jitsi.org/jitmeet">>, El, Opts) ->
-    decode_json_message(<<"http://jitsi.org/jitmeet">>,
-                        Opts,
-                        El);
 do_decode(<<"stream:stream">>, <<"jabber:client">>, El,
           Opts) ->
     decode_stream_start(<<"jabber:client">>, Opts, El);
@@ -511,6 +506,11 @@ do_decode(<<"body">>, <<"jabber:component:accept">>, El,
     decode_message_body(<<"jabber:component:accept">>,
                         Opts,
                         El);
+do_decode(<<"json-message">>,
+          <<"http://jitsi.org/jitmeet">>, El, Opts) ->
+    decode_json_message(<<"http://jitsi.org/jitmeet">>,
+                        Opts,
+                        El);
 do_decode(<<"subject">>, <<"jabber:client">>, El,
           Opts) ->
     decode_message_subject(<<"jabber:client">>, Opts, El);
@@ -535,8 +535,7 @@ do_decode(Name, XMLNS, _, _) ->
     erlang:error({xmpp_codec, {unknown_tag, Name, XMLNS}}).
 
 tags() ->
-    [{<<"json-message">>, <<"http://jitsi.org/jitmeet">>},
-     {<<"stream:stream">>, <<"jabber:client">>},
+    [{<<"stream:stream">>, <<"jabber:client">>},
      {<<"stream:stream">>, <<"jabber:server">>},
      {<<"stream:stream">>, <<"jabber:component:accept">>},
      {<<"stream:error">>, <<"jabber:client">>},
@@ -711,6 +710,7 @@ tags() ->
      {<<"body">>, <<"jabber:client">>},
      {<<"body">>, <<"jabber:server">>},
      {<<"body">>, <<"jabber:component:accept">>},
+     {<<"json-message">>, <<"http://jitsi.org/jitmeet">>},
      {<<"subject">>, <<"jabber:client">>},
      {<<"subject">>, <<"jabber:server">>},
      {<<"subject">>, <<"jabber:component:accept">>},
@@ -763,6 +763,8 @@ do_encode({starttls_failure} = Failure, TopXMLNS) ->
 do_encode({stream_features, _} = Stream_features,
           TopXMLNS) ->
     encode_stream_features(Stream_features, TopXMLNS);
+do_encode({text, _, _} = Text, TopXMLNS) ->
+    encode_stream_error_text(Text, TopXMLNS);
 do_encode({'see-other-host', _} = See_other_host,
           TopXMLNS) ->
     encode_stream_error_see_other_host(See_other_host,
@@ -773,9 +775,7 @@ do_encode({stream_error, _, _} = Stream_error,
 do_encode({stream_start, _, _, _, _, _, _, _, _} =
               Stream_stream,
           TopXMLNS) ->
-    encode_stream_start(Stream_stream, TopXMLNS);
-do_encode({text, _, _} = Json_message, TopXMLNS) ->
-    encode_json_message(Json_message, TopXMLNS).
+    encode_stream_start(Stream_stream, TopXMLNS).
 
 do_get_name({bind, _, _}) -> <<"bind">>;
 do_get_name({gone, _}) -> <<"gone">>;
@@ -816,7 +816,7 @@ do_get_name({stream_features, _}) ->
     <<"stream:features">>;
 do_get_name({stream_start, _, _, _, _, _, _, _, _}) ->
     <<"stream:stream">>;
-do_get_name({text, _, _}) -> <<"json-message">>.
+do_get_name({text, _, _}) -> <<"text">>.
 
 do_get_ns({bind, _, _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-bind">>;
@@ -1015,6 +1015,7 @@ pp(starttls, 1) -> [required];
 pp(starttls_proceed, 0) -> [];
 pp(starttls_failure, 0) -> [];
 pp(stream_features, 1) -> [sub_els];
+pp(text, 2) -> [lang, data];
 pp('see-other-host', 1) -> [host];
 pp(stream_error, 2) -> [reason, text];
 pp(stream_start, 8) ->
@@ -1026,7 +1027,6 @@ pp(stream_start, 8) ->
      stream_xmlns,
      db_xmlns,
      lang];
-pp(text, 2) -> [lang, data];
 pp(_, _) -> no.
 
 records() ->
@@ -1049,10 +1049,10 @@ records() ->
      {starttls_proceed, 0},
      {starttls_failure, 0},
      {stream_features, 1},
+     {text, 2},
      {'see-other-host', 1},
      {stream_error, 2},
-     {stream_start, 8},
-     {text, 2}].
+     {stream_start, 8}].
 
 check_resource(R) ->
     case jid:resourceprep(R) of
@@ -1124,74 +1124,6 @@ enc_ip(Addr) -> list_to_binary(inet_parse:ntoa(Addr)).
 enc_version({Maj, Min}) ->
     <<(integer_to_binary(Maj))/binary, $.,
       (integer_to_binary(Min))/binary>>.
-
-decode_json_message(__TopXMLNS, __Opts,
-                    {xmlel, <<"json-message">>, _attrs, _els}) ->
-    Data = decode_json_message_els(__TopXMLNS,
-                                   __Opts,
-                                   _els,
-                                   <<>>),
-    Lang = decode_json_message_attrs(__TopXMLNS,
-                                     _attrs,
-                                     undefined),
-    {text, Lang, Data}.
-
-decode_json_message_els(__TopXMLNS, __Opts, [], Data) ->
-    decode_json_message_cdata(__TopXMLNS, Data);
-decode_json_message_els(__TopXMLNS, __Opts,
-                        [{xmlcdata, _data} | _els], Data) ->
-    decode_json_message_els(__TopXMLNS,
-                            __Opts,
-                            _els,
-                            <<Data/binary, _data/binary>>);
-decode_json_message_els(__TopXMLNS, __Opts, [_ | _els],
-                        Data) ->
-    decode_json_message_els(__TopXMLNS, __Opts, _els, Data).
-
-decode_json_message_attrs(__TopXMLNS,
-                          [{<<"xml:lang">>, _val} | _attrs], _Lang) ->
-    decode_json_message_attrs(__TopXMLNS, _attrs, _val);
-decode_json_message_attrs(__TopXMLNS, [_ | _attrs],
-                          Lang) ->
-    decode_json_message_attrs(__TopXMLNS, _attrs, Lang);
-decode_json_message_attrs(__TopXMLNS, [], Lang) ->
-    'decode_json_message_attr_xml:lang'(__TopXMLNS, Lang).
-
-encode_json_message({text, Lang, Data}, __TopXMLNS) ->
-    __NewTopXMLNS =
-        xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/jitmeet">>,
-                                    [],
-                                    __TopXMLNS),
-    _els = encode_json_message_cdata(Data, []),
-    _attrs = 'encode_json_message_attr_xml:lang'(Lang,
-                                                 xmpp_codec:enc_xmlns_attrs(__NewTopXMLNS,
-                                                                            __TopXMLNS)),
-    {xmlel, <<"json-message">>, _attrs, _els}.
-
-'decode_json_message_attr_xml:lang'(__TopXMLNS,
-                                    undefined) ->
-    <<>>;
-'decode_json_message_attr_xml:lang'(__TopXMLNS, _val) ->
-    case catch xmpp_lang:check(_val) of
-        {'EXIT', _} ->
-            erlang:error({xmpp_codec,
-                          {bad_attr_value,
-                           <<"xml:lang">>,
-                           <<"json-message">>,
-                           __TopXMLNS}});
-        _res -> _res
-    end.
-
-'encode_json_message_attr_xml:lang'(<<>>, _acc) -> _acc;
-'encode_json_message_attr_xml:lang'(_val, _acc) ->
-    [{<<"xml:lang">>, _val} | _acc].
-
-decode_json_message_cdata(__TopXMLNS, <<>>) -> <<>>;
-decode_json_message_cdata(__TopXMLNS, _val) -> _val.
-
-encode_json_message_cdata(<<>>, _acc) -> _acc;
-encode_json_message_cdata(_val, _acc) ->
-    [{xmlcdata, _val} | _acc].
 
 decode_stream_start(__TopXMLNS, __Opts,
                     {xmlel, <<"stream:stream">>, _attrs, _els}) ->
@@ -6192,9 +6124,9 @@ decode_message(__TopXMLNS, __Opts,
      Subject,
      Body,
      Thread,
+     Json_message,
      __Els,
-     [],
-     Json_message}.
+     #{}}.
 
 decode_message_els(__TopXMLNS, __Opts, [], Thread,
                    Subject, Json_message, Body, __Els) ->
@@ -6517,9 +6449,9 @@ encode_message({message,
                 Subject,
                 Body,
                 Thread,
+                Json_message,
                 __Els,
-                _,
-                Json_message},
+                _},
                __TopXMLNS) ->
     __NewTopXMLNS = xmpp_codec:choose_top_xmlns(<<>>,
                                                 [<<"jabber:client">>,
@@ -6785,6 +6717,74 @@ decode_message_body_cdata(__TopXMLNS, _val) -> _val.
 
 encode_message_body_cdata(<<>>, _acc) -> _acc;
 encode_message_body_cdata(_val, _acc) ->
+    [{xmlcdata, _val} | _acc].
+
+decode_json_message(__TopXMLNS, __Opts,
+                    {xmlel, <<"json-message">>, _attrs, _els}) ->
+    Data = decode_json_message_els(__TopXMLNS,
+                                   __Opts,
+                                   _els,
+                                   <<>>),
+    Lang = decode_json_message_attrs(__TopXMLNS,
+                                     _attrs,
+                                     undefined),
+    {text, Lang, Data}.
+
+decode_json_message_els(__TopXMLNS, __Opts, [], Data) ->
+    decode_json_message_cdata(__TopXMLNS, Data);
+decode_json_message_els(__TopXMLNS, __Opts,
+                        [{xmlcdata, _data} | _els], Data) ->
+    decode_json_message_els(__TopXMLNS,
+                            __Opts,
+                            _els,
+                            <<Data/binary, _data/binary>>);
+decode_json_message_els(__TopXMLNS, __Opts, [_ | _els],
+                        Data) ->
+    decode_json_message_els(__TopXMLNS, __Opts, _els, Data).
+
+decode_json_message_attrs(__TopXMLNS,
+                          [{<<"xml:lang">>, _val} | _attrs], _Lang) ->
+    decode_json_message_attrs(__TopXMLNS, _attrs, _val);
+decode_json_message_attrs(__TopXMLNS, [_ | _attrs],
+                          Lang) ->
+    decode_json_message_attrs(__TopXMLNS, _attrs, Lang);
+decode_json_message_attrs(__TopXMLNS, [], Lang) ->
+    'decode_json_message_attr_xml:lang'(__TopXMLNS, Lang).
+
+encode_json_message({text, Lang, Data}, __TopXMLNS) ->
+    __NewTopXMLNS =
+        xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/jitmeet">>,
+                                    [],
+                                    __TopXMLNS),
+    _els = encode_json_message_cdata(Data, []),
+    _attrs = 'encode_json_message_attr_xml:lang'(Lang,
+                                                 xmpp_codec:enc_xmlns_attrs(__NewTopXMLNS,
+                                                                            __TopXMLNS)),
+    {xmlel, <<"json-message">>, _attrs, _els}.
+
+'decode_json_message_attr_xml:lang'(__TopXMLNS,
+                                    undefined) ->
+    <<>>;
+'decode_json_message_attr_xml:lang'(__TopXMLNS, _val) ->
+    case catch xmpp_lang:check(_val) of
+        {'EXIT', _} ->
+            erlang:error({xmpp_codec,
+                          {bad_attr_value,
+                           <<"xml:lang">>,
+                           <<"json-message">>,
+                           __TopXMLNS}});
+        _res -> _res
+    end.
+
+'encode_json_message_attr_xml:lang'(<<>>, _acc) -> _acc;
+'encode_json_message_attr_xml:lang'(_val, _acc) ->
+    [{<<"xml:lang">>, _val} | _acc].
+
+decode_json_message_cdata(__TopXMLNS, <<>>) -> <<>>;
+decode_json_message_cdata(__TopXMLNS, _val) -> _val.
+
+encode_json_message_cdata(<<>>, _acc) -> _acc;
+encode_json_message_cdata(_val, _acc) ->
     [{xmlcdata, _val} | _acc].
 
 decode_message_subject(__TopXMLNS, __Opts,

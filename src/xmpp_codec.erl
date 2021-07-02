@@ -791,14 +791,14 @@ get_mod(<<"metadata">>,
 get_mod(<<"x509-cert">>, <<"urn:xmpp:x509:0">>) ->
     xep0417;
 get_mod(<<"jid">>, <<"urn:xmpp:jidprep:0">>) -> xep0328;
+get_mod(<<"json-message">>,
+        <<"http://jitsi.org/jitmeet">>) ->
+    rfc6120;
 get_mod(<<"password">>,
         <<"http://jabber.org/protocol/muc#owner">>) ->
     xep0045;
 get_mod(<<"services">>, <<"urn:xmpp:extdisco:2">>) ->
     xep0215;
-get_mod(<<"json-message">>,
-        <<"http://jitsi.org/jitmeet">>) ->
-    rfc6120;
 get_mod(<<"method">>,
         <<"http://jabber.org/features/compress">>) ->
     xep0138;
@@ -1722,8 +1722,8 @@ get_mod({feature_sm, _}) -> xep0198;
 get_mod({mix_participant, _, _}) -> xep0369;
 get_mod({stanza_id, _, _}) -> xep0359;
 get_mod({delegated, _, _}) -> xep0355;
+get_mod({text, _, _}) -> xep0234;
 get_mod({jingle_ft_received, _, _}) -> xep0234;
-get_mod({text, _, _}) -> rfc6120;
 get_mod({bookmark_storage, _, _}) -> xep0048;
 get_mod({sasl_failure, _, _}) -> rfc6120;
 get_mod({xmpp_session, _}) -> rfc3921;
