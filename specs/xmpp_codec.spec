@@ -488,6 +488,7 @@
                   subject = [] :: [#text{}],
                   body = [] :: [#text{}],
                   thread :: undefined | message_thread(),
+                  json_message :: [] | [#text{}],
                   sub_els = [] :: [xmpp_element() | fxml:xmlel()],
 		  meta = #{} :: map()}).
 -type message() :: #message{}.
@@ -498,7 +499,7 @@
 		    <<"jabber:component:accept">>],
 	   module = rfc6120,
            result = {message, '$id', '$type', '$lang', '$from', '$to',
-                     '$subject', '$body', '$thread', '$_els', '$_'},
+                     '$subject', '$body', '$thread', '$_els', '$_', '$json_message'},
            attrs = [#attr{name = <<"id">>},
                     #attr{name = <<"type">>,
                           default = normal,
@@ -515,7 +516,8 @@
                           label = '$lang'}],
            refs = [#ref{name = message_subject, label = '$subject'},
                    #ref{name = message_thread, min = 0, max = 1, label = '$thread'},
-                   #ref{name = message_body, label = '$body'}]}).
+                   #ref{name = message_body, label = '$body'},
+                   #ref{name = json_message, label = '$json_message'}]}).
 
 -xml(presence_show,
      #elem{name = <<"show">>,
@@ -5011,6 +5013,16 @@
 	   xmlns = <<"urn:xmpp:x509:0">>,
 	   module = 'xep0417',
 	   result = {x509_register}}).
+
+-xml(json_message,
+     #elem{name = <<"json-message">>,
+          xmlns = <<"http://jitsi.org/jitmeet">>,
+          module = rfc6120,
+          result = {text, '$lang', '$data'},
+          cdata = #cdata{label = '$data'},
+          attrs = [#attr{name = <<"xml:lang">>,
+               dec = {xmpp_lang, check, []},
+               label = '$lang'}]}).
 
 -spec dec_tzo(_) -> {integer(), integer()}.
 dec_tzo(Val) ->

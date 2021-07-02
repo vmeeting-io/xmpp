@@ -27,6 +27,7 @@ encode(El, TopXMLNS) ->
     Mod = get_mod(El),
     Mod:do_encode(El, TopXMLNS).
 
+
 get_name(El) ->
     Mod = get_mod(El),
     Mod:do_get_name(El).
@@ -795,6 +796,9 @@ get_mod(<<"password">>,
     xep0045;
 get_mod(<<"services">>, <<"urn:xmpp:extdisco:2">>) ->
     xep0215;
+get_mod(<<"json-message">>,
+        <<"http://jitsi.org/jitmeet">>) ->
+    rfc6120;
 get_mod(<<"method">>,
         <<"http://jabber.org/features/compress">>) ->
     xep0138;
@@ -1614,8 +1618,6 @@ get_mod({x509_ca_list, _}) -> xep0417;
 get_mod({disco_items, _, _, _}) -> xep0030;
 get_mod({vcard_xupdate, _}) -> xep0153;
 get_mod({block_item, _, _}) -> xep0191;
-get_mod({message, _, _, _, _, _, _, _, _, _, _}) ->
-    rfc6120;
 get_mod({presence, _, _, _, _, _, _, _, _, _, _}) ->
     rfc6120;
 get_mod({streamhost, _, _, _}) -> xep0065;
@@ -1720,8 +1722,8 @@ get_mod({feature_sm, _}) -> xep0198;
 get_mod({mix_participant, _, _}) -> xep0369;
 get_mod({stanza_id, _, _}) -> xep0359;
 get_mod({delegated, _, _}) -> xep0355;
-get_mod({text, _, _}) -> xep0234;
 get_mod({jingle_ft_received, _, _}) -> xep0234;
+get_mod({text, _, _}) -> rfc6120;
 get_mod({bookmark_storage, _, _}) -> xep0048;
 get_mod({sasl_failure, _, _}) -> rfc6120;
 get_mod({xmpp_session, _}) -> rfc3921;
@@ -1735,6 +1737,8 @@ get_mod({push_disable, _, _}) -> xep0357;
 get_mod({push_notification, _}) -> xep0357;
 get_mod({disco_item, _, _, _}) -> xep0030;
 get_mod({stat, _, _, _, _}) -> xep0039;
+get_mod({message, _, _, _, _, _, _, _, _, _, _, _}) ->
+    rfc6120;
 get_mod({register,
          _,
          _,
