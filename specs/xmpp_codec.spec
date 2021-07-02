@@ -460,6 +460,16 @@
 			  dec = {xmpp_lang, check, []},
 			  label = '$lang'}]}).
 
+-xml(json_message,
+     #elem{name = <<"json-message">>,
+          xmlns = <<"http://jitsi.org/jitmeet">>,
+          module = rfc6120,
+          result = {text, '$lang', '$data'},
+          cdata = #cdata{label = '$data'},
+          attrs = [#attr{name = <<"xml:lang">>,
+               dec = {xmpp_lang, check, []},
+               label = '$lang'}]}).
+
 -xml(message_body,
      #elem{name = <<"body">>,
            xmlns = [<<"jabber:client">>, <<"jabber:server">>,
@@ -499,7 +509,7 @@
 		    <<"jabber:component:accept">>],
 	   module = rfc6120,
            result = {message, '$id', '$type', '$lang', '$from', '$to',
-                     '$subject', '$body', '$thread', '$_els', '$_', '$json_message'},
+                     '$subject', '$body', '$thread', '$json_message', '$_els', '$_'},
            attrs = [#attr{name = <<"id">>},
                     #attr{name = <<"type">>,
                           default = normal,
@@ -5013,16 +5023,6 @@
 	   xmlns = <<"urn:xmpp:x509:0">>,
 	   module = 'xep0417',
 	   result = {x509_register}}).
-
--xml(json_message,
-     #elem{name = <<"json-message">>,
-          xmlns = <<"http://jitsi.org/jitmeet">>,
-          module = rfc6120,
-          result = {text, '$lang', '$data'},
-          cdata = #cdata{label = '$data'},
-          attrs = [#attr{name = <<"xml:lang">>,
-               dec = {xmpp_lang, check, []},
-               label = '$lang'}]}).
 
 -spec dec_tzo(_) -> {integer(), integer()}.
 dec_tzo(Val) ->
