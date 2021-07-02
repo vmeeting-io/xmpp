@@ -498,7 +498,7 @@
                   subject = [] :: [#text{}],
                   body = [] :: [#text{}],
                   thread :: undefined | message_thread(),
-                  json_message :: [] | [#text{}],
+                  json_message = [] :: [#text{}],
                   sub_els = [] :: [xmpp_element() | fxml:xmlel()],
 		  meta = #{} :: map()}).
 -type message() :: #message{}.
