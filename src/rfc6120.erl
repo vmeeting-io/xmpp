@@ -726,6 +726,8 @@ tags() ->
 
 do_encode({iq, _, _, _, _, _, _, _} = Iq, TopXMLNS) ->
     encode_iq(Iq, TopXMLNS);
+do_encode({speakerstats, _} = Speakerstats, TopXMLNS) ->
+    encode_speakerstats(Speakerstats, TopXMLNS);
 do_encode({message_thread, _, _} = Thread, TopXMLNS) ->
     encode_message_thread(Thread, TopXMLNS);
 do_encode({message,
@@ -825,6 +827,7 @@ do_get_name({sasl_response, _}) -> <<"response">>;
 do_get_name({sasl_success, _}) -> <<"success">>;
 do_get_name({'see-other-host', _}) ->
     <<"see-other-host">>;
+do_get_name({speakerstats, _}) -> <<"speakerstats">>;
 do_get_name({stanza_error, _, _, _, _, _, _}) ->
     <<"error">>;
 do_get_name({starttls, _}) -> <<"starttls">>;
@@ -879,6 +882,8 @@ do_get_ns({sasl_success, _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-sasl">>;
 do_get_ns({'see-other-host', _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-streams">>;
+do_get_ns({speakerstats, _}) ->
+    <<"http://jitsi.org/jitmeet">>;
 do_get_ns({stanza_error, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
 do_get_ns({starttls, _}) ->
@@ -1009,6 +1014,7 @@ set_els({stream_features, _}, _sub_els) ->
     {stream_features, _sub_els}.
 
 pp(iq, 7) -> [id, type, lang, from, to, sub_els, meta];
+pp(speakerstats, 1) -> [room];
 pp(message_thread, 2) -> [parent, data];
 pp(message, 12) ->
     [id,
@@ -1066,6 +1072,7 @@ pp(_, _) -> no.
 
 records() ->
     [{iq, 7},
+     {speakerstats, 1},
      {message_thread, 2},
      {message, 12},
      {presence, 10},
@@ -6835,7 +6842,7 @@ decode_speakerstats(__TopXMLNS, __Opts,
     Room = decode_speakerstats_attrs(__TopXMLNS,
                                      _attrs,
                                      undefined),
-    [speakerstats, Room].
+    {speakerstats, Room}.
 
 decode_speakerstats_attrs(__TopXMLNS,
                           [{<<"room">>, _val} | _attrs], _Room) ->
@@ -6846,7 +6853,7 @@ decode_speakerstats_attrs(__TopXMLNS, [_ | _attrs],
 decode_speakerstats_attrs(__TopXMLNS, [], Room) ->
     decode_speakerstats_attr_room(__TopXMLNS, Room).
 
-encode_speakerstats([speakerstats, Room], __TopXMLNS) ->
+encode_speakerstats({speakerstats, Room}, __TopXMLNS) ->
     __NewTopXMLNS =
         xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/jitmeet">>,
                                     [],

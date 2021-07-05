@@ -470,14 +470,11 @@
                dec = {xmpp_lang, check, []},
                label = '$lang'}]}).
 
--record(speakerstats, {room = <<>> :: binary()}).
--type speakerstats() :: #speakerstats{}.
-
 -xml(speakerstats,
      #elem{name = <<"speakerstats">>,
           xmlns = <<"http://jitsi.org/jitmeet">>,
           module = rfc6120,
-          result = [speakerstats, '$room'],
+          result = {speakerstats, '$room'},
           attrs = [#attr{name = <<"room">>}]}).
 
 -xml(message_body,
@@ -494,11 +491,11 @@
 -xml(message_thread,
      #elem{name = <<"thread">>,
            xmlns = [<<"jabber:client">>, <<"jabber:server">>,
-		    <<"jabber:component:accept">>],
-	   module = rfc6120,
+		          <<"jabber:component:accept">>],
+	      module = rfc6120,
            result = {message_thread, '$parent', '$data'},
-	   attrs = [#attr{name = <<"parent">>}],
-	   cdata = #cdata{label = '$data'}}).
+	      attrs = [#attr{name = <<"parent">>}],
+	      cdata = #cdata{label = '$data'}}).
 
 -record(message, {id = <<>> :: binary(),
                   type = normal :: message_type(),

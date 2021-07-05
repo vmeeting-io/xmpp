@@ -1813,6 +1813,7 @@ get_mod({delegation_query, _, _}) -> xep0355;
 get_mod({jingle_error, _}) -> xep0166;
 get_mod({jingle_s5b_candidate, _, _, _, _, _, _}) ->
     xep0260;
+get_mod({speakerstats, _}) -> rfc6120;
 get_mod({sasl_success, _}) -> rfc6120;
 get_mod({compress, _}) -> xep0138;
 get_mod({xdata_field, _, _, _, _, _, _, _, _}) ->

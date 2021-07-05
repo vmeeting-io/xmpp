@@ -20,9 +20,6 @@
 	     meta = #{} :: map()}).
 -type iq() :: #iq{}.
 
--record(speakerstats, {room = <<>> :: binary()}).
--type speakerstats() :: #speakerstats{}.
-
 -record(message, {id = <<>> :: binary(),
                   type = normal :: message_type(),
                   lang = <<>> :: binary(),
@@ -422,6 +419,9 @@
 
 -record(addresses, {list = [] :: [#address{}]}).
 -type addresses() :: #addresses{}.
+
+-record(speakerstats, {room = <<>> :: binary()}).
+-type speakerstats() :: #speakerstats{}.
 
 -record(starttls, {required = false :: boolean()}).
 -type starttls() :: #starttls{}.
@@ -1397,6 +1397,7 @@
                         sm_r() |
                         sm_resume() |
                         sm_resumed() |
+                        speakerstats() |
                         stanza_error() |
                         stanza_id() |
                         starttls() |
