@@ -470,6 +470,9 @@
                dec = {xmpp_lang, check, []},
                label = '$lang'}]}).
 
+-record(speakerstats, {room = [] :: [#text{}]}).
+-type speakerstats() :: #speakerstats{}.
+
 -xml(speakerstats,
      #elem{name = <<"speakerstats">>,
           xmlns = <<"http://jitsi.org/jitmeet">>,

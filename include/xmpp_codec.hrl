@@ -20,6 +20,9 @@
 	     meta = #{} :: map()}).
 -type iq() :: #iq{}.
 
+-record(speakerstats, {room = [] :: [#text{}]}).
+-type speakerstats() :: #speakerstats{}.
+
 -record(message, {id = <<>> :: binary(),
                   type = normal :: message_type(),
                   lang = <<>> :: binary(),
