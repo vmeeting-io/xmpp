@@ -1397,6 +1397,7 @@
                         sm_r() |
                         sm_resume() |
                         sm_resumed() |
+                        speakerstats() |
                         stanza_error() |
                         stanza_id() |
                         starttls() |

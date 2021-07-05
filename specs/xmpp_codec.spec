@@ -477,13 +477,10 @@
      #elem{name = <<"speakerstats">>,
           xmlns = <<"http://jitsi.org/jitmeet">>,
           module = rfc6120,
-          result = {text, '$room', '$lang', '$data'},
+          result = {speakerstats, '$room', '$data'},
           cdata = #cdata{label = '$data'},
           attrs = [#attr{name = <<"room">>,
-                         required = true},
-                   #attr{name = <<"xml:lang">>,
-                         dec = {xmpp_lang, check, []},
-                         label = '$lang'}]}).
+                         required = true}]}).
 
 -xml(message_body,
      #elem{name = <<"body">>,
