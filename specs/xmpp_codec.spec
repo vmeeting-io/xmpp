@@ -470,7 +470,7 @@
                dec = {xmpp_lang, check, []},
                label = '$lang'}]}).
 
--record(speakerstats, {room = [] :: [#text{}]}).
+-record(speakerstats, {room = <<>> :: binary()}).
 -type speakerstats() :: #speakerstats{}.
 
 -xml(speakerstats,
