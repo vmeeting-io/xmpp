@@ -32,7 +32,7 @@
                   body = [] :: [#text{}],
                   thread :: undefined | message_thread(),
                   json_message = [] :: [#text{}],
-                  speakerstats = [] :: speakerstats(),
+                  speakerstats :: undefined | speakerstats(),
                   sub_els = [] :: [xmpp_element() | fxml:xmlel()],
 		  meta = #{} :: map()}).
 -type message() :: #message{}.
@@ -1397,7 +1397,6 @@
                         sm_r() |
                         sm_resume() |
                         sm_resumed() |
-                        speakerstats() |
                         stanza_error() |
                         stanza_id() |
                         starttls() |

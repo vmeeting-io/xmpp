@@ -726,9 +726,6 @@ tags() ->
 
 do_encode({iq, _, _, _, _, _, _, _} = Iq, TopXMLNS) ->
     encode_iq(Iq, TopXMLNS);
-do_encode({speakerstats, _, _} = Speakerstats,
-          TopXMLNS) ->
-    encode_speakerstats(Speakerstats, TopXMLNS);
 do_encode({message_thread, _, _} = Thread, TopXMLNS) ->
     encode_message_thread(Thread, TopXMLNS);
 do_encode({message,
@@ -828,7 +825,6 @@ do_get_name({sasl_response, _}) -> <<"response">>;
 do_get_name({sasl_success, _}) -> <<"success">>;
 do_get_name({'see-other-host', _}) ->
     <<"see-other-host">>;
-do_get_name({speakerstats, _, _}) -> <<"speakerstats">>;
 do_get_name({stanza_error, _, _, _, _, _, _}) ->
     <<"error">>;
 do_get_name({starttls, _}) -> <<"starttls">>;
@@ -883,8 +879,6 @@ do_get_ns({sasl_success, _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-sasl">>;
 do_get_ns({'see-other-host', _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-streams">>;
-do_get_ns({speakerstats, _, _}) ->
-    <<"http://jitsi.org/jitmeet">>;
 do_get_ns({stanza_error, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
 do_get_ns({starttls, _}) ->
@@ -1015,7 +1009,6 @@ set_els({stream_features, _}, _sub_els) ->
     {stream_features, _sub_els}.
 
 pp(iq, 7) -> [id, type, lang, from, to, sub_els, meta];
-pp(speakerstats, 2) -> [room];
 pp(message_thread, 2) -> [parent, data];
 pp(message, 12) ->
     [id,
@@ -1073,7 +1066,6 @@ pp(_, _) -> no.
 
 records() ->
     [{iq, 7},
-     {speakerstats, 2},
      {message_thread, 2},
      {message, 12},
      {presence, 10},
@@ -6840,26 +6832,10 @@ encode_message_body_cdata(_val, _acc) ->
 
 decode_speakerstats(__TopXMLNS, __Opts,
                     {xmlel, <<"speakerstats">>, _attrs, _els}) ->
-    Data = decode_speakerstats_els(__TopXMLNS,
-                                   __Opts,
-                                   _els,
-                                   <<>>),
     Room = decode_speakerstats_attrs(__TopXMLNS,
                                      _attrs,
                                      undefined),
-    {speakerstats, Room, Data}.
-
-decode_speakerstats_els(__TopXMLNS, __Opts, [], Data) ->
-    decode_speakerstats_cdata(__TopXMLNS, Data);
-decode_speakerstats_els(__TopXMLNS, __Opts,
-                        [{xmlcdata, _data} | _els], Data) ->
-    decode_speakerstats_els(__TopXMLNS,
-                            __Opts,
-                            _els,
-                            <<Data/binary, _data/binary>>);
-decode_speakerstats_els(__TopXMLNS, __Opts, [_ | _els],
-                        Data) ->
-    decode_speakerstats_els(__TopXMLNS, __Opts, _els, Data).
+    [speakerstats, Room].
 
 decode_speakerstats_attrs(__TopXMLNS,
                           [{<<"room">>, _val} | _attrs], _Room) ->
@@ -6870,35 +6846,24 @@ decode_speakerstats_attrs(__TopXMLNS, [_ | _attrs],
 decode_speakerstats_attrs(__TopXMLNS, [], Room) ->
     decode_speakerstats_attr_room(__TopXMLNS, Room).
 
-encode_speakerstats({speakerstats, Room, Data},
-                    __TopXMLNS) ->
+encode_speakerstats([speakerstats, Room], __TopXMLNS) ->
     __NewTopXMLNS =
         xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/jitmeet">>,
                                     [],
                                     __TopXMLNS),
-    _els = encode_speakerstats_cdata(Data, []),
+    _els = [],
     _attrs = encode_speakerstats_attr_room(Room,
                                            xmpp_codec:enc_xmlns_attrs(__NewTopXMLNS,
                                                                       __TopXMLNS)),
     {xmlel, <<"speakerstats">>, _attrs, _els}.
 
 decode_speakerstats_attr_room(__TopXMLNS, undefined) ->
-    erlang:error({xmpp_codec,
-                  {missing_attr,
-                   <<"room">>,
-                   <<"speakerstats">>,
-                   __TopXMLNS}});
+    <<>>;
 decode_speakerstats_attr_room(__TopXMLNS, _val) -> _val.
 
+encode_speakerstats_attr_room(<<>>, _acc) -> _acc;
 encode_speakerstats_attr_room(_val, _acc) ->
     [{<<"room">>, _val} | _acc].
-
-decode_speakerstats_cdata(__TopXMLNS, <<>>) -> <<>>;
-decode_speakerstats_cdata(__TopXMLNS, _val) -> _val.
-
-encode_speakerstats_cdata(<<>>, _acc) -> _acc;
-encode_speakerstats_cdata(_val, _acc) ->
-    [{xmlcdata, _val} | _acc].
 
 decode_json_message(__TopXMLNS, __Opts,
                     {xmlel, <<"json-message">>, _attrs, _els}) ->

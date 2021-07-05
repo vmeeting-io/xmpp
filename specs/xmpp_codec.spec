@@ -477,10 +477,8 @@
      #elem{name = <<"speakerstats">>,
           xmlns = <<"http://jitsi.org/jitmeet">>,
           module = rfc6120,
-          result = {speakerstats, '$room', '$data'},
-          cdata = #cdata{label = '$data'},
-          attrs = [#attr{name = <<"room">>,
-                         required = true}]}).
+          result = [speakerstats, '$room'],
+          attrs = [#attr{name = <<"room">>}]}).
 
 -xml(message_body,
      #elem{name = <<"body">>,
@@ -511,7 +509,7 @@
                   body = [] :: [#text{}],
                   thread :: undefined | message_thread(),
                   json_message = [] :: [#text{}],
-                  speakerstats = [] :: speakerstats(),
+                  speakerstats :: undefined | speakerstats(),
                   sub_els = [] :: [xmpp_element() | fxml:xmlel()],
 		  meta = #{} :: map()}).
 -type message() :: #message{}.
@@ -593,7 +591,7 @@
                      '$show', '$status', '$priority', '$_els', '$_'},
            attrs = [#attr{name = <<"id">>},
                     #attr{name = <<"type">>,
-			  default = available,
+			           default = available,
                           enc = {enc_enum, []},
                           dec = {dec_enum, [[unavailable, subscribe, subscribed,
                                              unsubscribe, unsubscribed,
@@ -783,7 +781,7 @@
                         min = 0, max = 1, label = '$reason'},
                    #ref{name = error_not_authorized,
                         min = 0, max = 1, label = '$reason'},
-		   #ref{name = error_payment_required,
+		         #ref{name = error_payment_required,
                         min = 0, max = 1, label = '$reason'},
                    #ref{name = error_policy_violation,
                         min = 0, max = 1, label = '$reason'},

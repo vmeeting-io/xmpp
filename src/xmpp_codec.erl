@@ -1593,7 +1593,6 @@ get_mod(Name, XMLNS) ->
     xmpp_codec_external:lookup(Name, XMLNS).
 
 get_mod({rosterver_feature}) -> rfc6121;
-get_mod({speakerstats, _, _}) -> rfc6120;
 get_mod({legacy_auth_feature}) -> xep0078;
 get_mod({carbons_disable}) -> xep0280;
 get_mod({last, _, _}) -> xep0012;
