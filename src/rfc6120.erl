@@ -6149,10 +6149,10 @@ decode_message(__TopXMLNS, __Opts,
         decode_message_els(__TopXMLNS,
                            __Opts,
                            _els,
-                           [],
+                           undefined,
                            undefined,
                            [],
-                           [],
+                           undefined,
                            [],
                            []),
     {Id, Type, From, To, Lang} =
@@ -6179,10 +6179,10 @@ decode_message(__TopXMLNS, __Opts,
 
 decode_message_els(__TopXMLNS, __Opts, [], Speakerstats,
                    Thread, Subject, Json_message, Body, __Els) ->
-    {lists:reverse(Speakerstats),
+    {Speakerstats,
      Thread,
      lists:reverse(Subject),
-     lists:reverse(Json_message),
+     Json_message,
      lists:reverse(Body),
      lists:reverse(__Els)};
 decode_message_els(__TopXMLNS, __Opts,
@@ -6371,10 +6371,9 @@ decode_message_els(__TopXMLNS, __Opts,
                                Speakerstats,
                                Thread,
                                Subject,
-                               [decode_json_message(<<"http://jitsi.org/jitmeet">>,
-                                                    __Opts,
-                                                    _el)
-                                | Json_message],
+                               decode_json_message(<<"http://jitsi.org/jitmeet">>,
+                                                   __Opts,
+                                                   _el),
                                Body,
                                __Els);
         _ ->
@@ -6400,10 +6399,9 @@ decode_message_els(__TopXMLNS, __Opts,
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               [decode_speakerstats(<<"http://jitsi.org/jitmeet">>,
-                                                    __Opts,
-                                                    _el)
-                                | Speakerstats],
+                               decode_speakerstats(<<"http://jitsi.org/jitmeet">>,
+                                                   __Opts,
+                                                   _el),
                                Thread,
                                Subject,
                                Json_message,
@@ -6587,15 +6585,12 @@ encode_message({message,
                                                                                                                                                                        __TopXMLNS)))))),
     {xmlel, <<"message">>, _attrs, _els}.
 
-'encode_message_$speakerstats'([], __TopXMLNS, _acc) ->
+'encode_message_$speakerstats'(undefined, __TopXMLNS,
+                               _acc) ->
     _acc;
-'encode_message_$speakerstats'([Speakerstats | _els],
-                               __TopXMLNS, _acc) ->
-    'encode_message_$speakerstats'(_els,
-                                   __TopXMLNS,
-                                   [encode_speakerstats(Speakerstats,
-                                                        __TopXMLNS)
-                                    | _acc]).
+'encode_message_$speakerstats'(Speakerstats, __TopXMLNS,
+                               _acc) ->
+    [encode_speakerstats(Speakerstats, __TopXMLNS) | _acc].
 
 'encode_message_$thread'(undefined, __TopXMLNS, _acc) ->
     _acc;
@@ -6610,15 +6605,12 @@ encode_message({message,
                               [encode_message_subject(Subject, __TopXMLNS)
                                | _acc]).
 
-'encode_message_$json_message'([], __TopXMLNS, _acc) ->
+'encode_message_$json_message'(undefined, __TopXMLNS,
+                               _acc) ->
     _acc;
-'encode_message_$json_message'([Json_message | _els],
-                               __TopXMLNS, _acc) ->
-    'encode_message_$json_message'(_els,
-                                   __TopXMLNS,
-                                   [encode_json_message(Json_message,
-                                                        __TopXMLNS)
-                                    | _acc]).
+'encode_message_$json_message'(Json_message, __TopXMLNS,
+                               _acc) ->
+    [encode_json_message(Json_message, __TopXMLNS) | _acc].
 
 'encode_message_$body'([], __TopXMLNS, _acc) -> _acc;
 'encode_message_$body'([Body | _els], __TopXMLNS,

@@ -535,8 +535,8 @@
            refs = [#ref{name = message_subject, label = '$subject'},
                    #ref{name = message_thread, min = 0, max = 1, label = '$thread'},
                    #ref{name = message_body, label = '$body'},
-                   #ref{name = json_message, label = '$json_message'},
-                   #ref{name = speakerstats, label = '$speakerstats'}]}).
+                   #ref{name = json_message, min = 0, max = 1, label = '$json_message'},
+                   #ref{name = speakerstats, min = 0, max = 1, label = '$speakerstats'}]}).
 
 -xml(presence_show,
      #elem{name = <<"show">>,
