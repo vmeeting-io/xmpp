@@ -29,6 +29,7 @@
                   body = [] :: [#text{}],
                   thread :: undefined | message_thread(),
                   json_message = [] :: [#text{}],
+                  speakerstats = [] :: [#text{}],
                   sub_els = [] :: [xmpp_element() | fxml:xmlel()],
 		  meta = #{} :: map()}).
 -type message() :: #message{}.

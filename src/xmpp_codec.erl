@@ -225,14 +225,9 @@ pp(Name, Arity) ->
 
 records() -> [].
 
-get_mod(<<"report">>, <<"urn:xmpp:reporting:0">>) ->
-    xep0377;
 get_mod(<<"status">>, <<"jabber:server">>) -> rfc6120;
 get_mod(<<"priority">>,
         <<"jabber:component:accept">>) ->
-    rfc6120;
-get_mod(<<"item-not-found">>,
-        <<"urn:ietf:params:xml:ns:xmpp-stanzas">>) ->
     rfc6120;
 get_mod(<<"failure">>,
         <<"urn:ietf:params:xml:ns:xmpp-tls">>) ->
@@ -806,6 +801,9 @@ get_mod(<<"invalid-jid">>,
         <<"http://jabber.org/protocol/pubsub#errors">>) ->
     xep0060;
 get_mod(<<"iq">>, <<"jabber:client">>) -> rfc6120;
+get_mod(<<"speakerstats">>,
+        <<"http://jitsi.org/jitmeet">>) ->
+    rfc6120;
 get_mod(<<"LOCALITY">>, <<"vcard-temp">>) -> xep0054;
 get_mod(<<"inactive">>,
         <<"http://jabber.org/protocol/chatstates">>) ->
@@ -1586,6 +1584,11 @@ get_mod(<<"flip-page">>, <<"urn:xmpp:mam:2">>) ->
     xep0313;
 get_mod(<<"received">>, <<"urn:xmpp:receipts">>) ->
     xep0184;
+get_mod(<<"report">>, <<"urn:xmpp:reporting:0">>) ->
+    xep0377;
+get_mod(<<"item-not-found">>,
+        <<"urn:ietf:params:xml:ns:xmpp-stanzas">>) ->
+    rfc6120;
 get_mod(Name, XMLNS) ->
     xmpp_codec_external:lookup(Name, XMLNS).
 
@@ -1737,8 +1740,6 @@ get_mod({push_disable, _, _}) -> xep0357;
 get_mod({push_notification, _}) -> xep0357;
 get_mod({disco_item, _, _, _}) -> xep0030;
 get_mod({stat, _, _, _, _}) -> xep0039;
-get_mod({message, _, _, _, _, _, _, _, _, _, _, _}) ->
-    rfc6120;
 get_mod({register,
          _,
          _,
@@ -1840,6 +1841,7 @@ get_mod({mix_create, _}) -> xep0369;
 get_mod({receipt_response, _}) -> xep0184;
 get_mod({sic, _, _, _}) -> xep0279;
 get_mod({idle, _}) -> xep0319;
+get_mod({text, _, _, _}) -> rfc6120;
 get_mod({sm_resumed, _, _, _}) -> xep0198;
 get_mod({offline_item, _, _}) -> xep0013;
 get_mod({db_verify, _, _, _, _, _, _}) -> xep0220;
@@ -1853,6 +1855,20 @@ get_mod({address, _, _, _, _, _}) -> xep0033;
 get_mod({thumbnail, _, _, _, _}) -> xep0264;
 get_mod({delegation, _, _}) -> xep0355;
 get_mod({x509_challenge, _, _, _}) -> xep0417;
+get_mod({message,
+         _,
+         _,
+         _,
+         _,
+         _,
+         _,
+         _,
+         _,
+         _,
+         _,
+         _,
+         _}) ->
+    rfc6120;
 get_mod({sm_enabled, _, _, _, _, _}) -> xep0198;
 get_mod({vcard_email, _, _, _, _, _, _}) -> xep0054;
 get_mod({ps_affiliation, _, _, _, _}) -> xep0060;

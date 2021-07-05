@@ -470,6 +470,18 @@
                dec = {xmpp_lang, check, []},
                label = '$lang'}]}).
 
+-xml(speakerstats,
+     #elem{name = <<"speakerstats">>,
+          xmlns = <<"http://jitsi.org/jitmeet">>,
+          module = rfc6120,
+          result = {text, '$room', '$lang', '$data'},
+          cdata = #cdata{label = '$data'},
+          attrs = [#attr{name = <<"room">>,
+                         required = true},
+                   #attr{name = <<"xml:lang">>,
+                         dec = {xmpp_lang, check, []},
+                         label = '$lang'}]}).
+
 -xml(message_body,
      #elem{name = <<"body">>,
            xmlns = [<<"jabber:client">>, <<"jabber:server">>,
@@ -499,6 +511,7 @@
                   body = [] :: [#text{}],
                   thread :: undefined | message_thread(),
                   json_message = [] :: [#text{}],
+                  speakerstats = [] :: [#text{}],
                   sub_els = [] :: [xmpp_element() | fxml:xmlel()],
 		  meta = #{} :: map()}).
 -type message() :: #message{}.
@@ -509,7 +522,7 @@
 		    <<"jabber:component:accept">>],
 	   module = rfc6120,
            result = {message, '$id', '$type', '$lang', '$from', '$to',
-                     '$subject', '$body', '$thread', '$json_message', '$_els', '$_'},
+                     '$subject', '$body', '$thread', '$json_message', '$speakerstats', '$_els', '$_'},
            attrs = [#attr{name = <<"id">>},
                     #attr{name = <<"type">>,
                           default = normal,
@@ -527,7 +540,8 @@
            refs = [#ref{name = message_subject, label = '$subject'},
                    #ref{name = message_thread, min = 0, max = 1, label = '$thread'},
                    #ref{name = message_body, label = '$body'},
-                   #ref{name = json_message, label = '$json_message'}]}).
+                   #ref{name = json_message, label = '$json_message'},
+                   #ref{name = speakerstats, label = '$speakerstats'}]}).
 
 -xml(presence_show,
      #elem{name = <<"show">>,
