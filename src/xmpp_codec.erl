@@ -974,6 +974,9 @@ get_mod(<<"abuse">>, <<"urn:xmpp:reporting:0">>) ->
 get_mod(<<"state">>, <<"jabber:iq:register">>) ->
     xep0077;
 get_mod(<<"utc">>, <<"urn:xmpp:time">>) -> xep0202;
+get_mod(<<"conference">>,
+        <<"http://jitsi.org/protocol/focus">>) ->
+    rfc6120;
 get_mod(<<"DOM">>, <<"vcard-temp">>) -> xep0054;
 get_mod(<<"default">>,
         <<"http://jabber.org/protocol/pubsub#owner">>) ->
@@ -1596,6 +1599,7 @@ get_mod({rosterver_feature}) -> rfc6121;
 get_mod({legacy_auth_feature}) -> xep0078;
 get_mod({carbons_disable}) -> xep0280;
 get_mod({last, _, _}) -> xep0012;
+get_mod({iq_conference, _, _}) -> rfc6120;
 get_mod({compression, _}) -> xep0138;
 get_mod({mam_prefs, _, _, _, _}) -> xep0313;
 get_mod({upload_file_too_large, _, _}) -> xep0363;
@@ -1621,6 +1625,8 @@ get_mod({x509_ca_list, _}) -> xep0417;
 get_mod({disco_items, _, _, _}) -> xep0030;
 get_mod({vcard_xupdate, _}) -> xep0153;
 get_mod({block_item, _, _}) -> xep0191;
+get_mod({message, _, _, _, _, _, _, _, _, _, _}) ->
+    rfc6120;
 get_mod({presence, _, _, _, _, _, _, _, _, _, _}) ->
     rfc6120;
 get_mod({streamhost, _, _, _}) -> xep0065;
@@ -1630,10 +1636,7 @@ get_mod({x509_cert_chain, _, _}) -> xep0417;
 get_mod({vcard_geo, _, _}) -> xep0054;
 get_mod({xevent, _, _, _, _, _}) -> xep0022;
 get_mod({jingle_content, _, _, _, _, _}) -> xep0166;
-get_mod({bookmark_conference, _, _, _, _, _}) ->
-    xep0048;
 get_mod({feature_register}) -> xep0077;
-get_mod({vcard_name, _, _, _, _, _}) -> xep0054;
 get_mod({pubsub,
          _,
          _,
@@ -1654,9 +1657,6 @@ get_mod({pubsub,
     xep0060;
 get_mod({x_conference, _, _, _, _, _}) -> xep0249;
 get_mod({inbox_query, _}) -> xep0430;
-get_mod({inbox_fin, _, _, _, _}) -> xep0430;
-get_mod({csi, _}) -> xep0352;
-get_mod({mix_join, _, _, _, _}) -> xep0369;
 get_mod({mix_destroy, _}) -> xep0369;
 get_mod({disco_info, _, _, _, _}) -> xep0030;
 get_mod({sm_a, _, _}) -> xep0198;
@@ -1855,20 +1855,6 @@ get_mod({address, _, _, _, _, _}) -> xep0033;
 get_mod({thumbnail, _, _, _, _}) -> xep0264;
 get_mod({delegation, _, _}) -> xep0355;
 get_mod({x509_challenge, _, _, _}) -> xep0417;
-get_mod({message,
-         _,
-         _,
-         _,
-         _,
-         _,
-         _,
-         _,
-         _,
-         _,
-         _,
-         _,
-         _}) ->
-    rfc6120;
 get_mod({sm_enabled, _, _, _, _, _}) -> xep0198;
 get_mod({vcard_email, _, _, _, _, _, _}) -> xep0054;
 get_mod({ps_affiliation, _, _, _, _}) -> xep0060;
@@ -1942,4 +1928,10 @@ get_mod({sm_resume, _, _, _}) -> xep0198;
 get_mod({push_enable, _, _, _}) -> xep0357;
 get_mod({jingle_ft_range, _, _, _}) -> xep0234;
 get_mod({db_result, _, _, _, _, _}) -> xep0220;
+get_mod({bookmark_conference, _, _, _, _, _}) ->
+    xep0048;
+get_mod({vcard_name, _, _, _, _, _}) -> xep0054;
+get_mod({inbox_fin, _, _, _, _}) -> xep0430;
+get_mod({csi, _}) -> xep0352;
+get_mod({mix_join, _, _, _, _}) -> xep0369;
 get_mod(Record) -> xmpp_codec_external:lookup(Record).

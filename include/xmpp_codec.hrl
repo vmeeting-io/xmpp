@@ -28,8 +28,6 @@
                   subject = [] :: [#text{}],
                   body = [] :: [#text{}],
                   thread :: undefined | message_thread(),
-                  json_message = [] :: [#text{}],
-                  speakerstats :: undefined | speakerstats(),
                   sub_els = [] :: [xmpp_element() | fxml:xmlel()],
 		  meta = #{} :: map()}).
 -type message() :: #message{}.
@@ -459,6 +457,10 @@
 -record(ps_subscribe, {node = <<>> :: binary(),
                        jid :: jid:jid()}).
 -type ps_subscribe() :: #ps_subscribe{}.
+
+-record(iq_conference, {'machine-uid' = <<>> :: binary(),
+                        room = <<>> :: binary()}).
+-type iq_conference() :: #iq_conference{}.
 
 -record(idle, {since :: erlang:timestamp()}).
 -type idle() :: #idle{}.
@@ -1284,6 +1286,7 @@
                         inbox_fin() |
                         inbox_query() |
                         iq() |
+                        iq_conference() |
                         jidprep() |
                         jingle() |
                         jingle_content() |

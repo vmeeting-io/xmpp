@@ -477,6 +477,14 @@
           result = {speakerstats, '$room'},
           attrs = [#attr{name = <<"room">>}]}).
 
+-xml(iq_conference,
+     #elem{name = <<"conference">>,
+          xmlns = <<"http://jitsi.org/protocol/focus">>,
+          module = rfc6120,
+          result = {iq_conference, '$machine-uid', '$room'},
+          attrs = [#attr{name = <<"machine-uid">>},
+                   #attr{name = <<"room">>}]}).
+
 -xml(message_body,
      #elem{name = <<"body">>,
            xmlns = [<<"jabber:client">>, <<"jabber:server">>,
@@ -505,8 +513,6 @@
                   subject = [] :: [#text{}],
                   body = [] :: [#text{}],
                   thread :: undefined | message_thread(),
-                  json_message = [] :: [#text{}],
-                  speakerstats :: undefined | speakerstats(),
                   sub_els = [] :: [xmpp_element() | fxml:xmlel()],
 		  meta = #{} :: map()}).
 -type message() :: #message{}.
@@ -517,7 +523,7 @@
 		    <<"jabber:component:accept">>],
 	   module = rfc6120,
            result = {message, '$id', '$type', '$lang', '$from', '$to',
-                     '$subject', '$body', '$thread', '$json_message', '$speakerstats', '$_els', '$_'},
+                     '$subject', '$body', '$thread', '$_els', '$_'},
            attrs = [#attr{name = <<"id">>},
                     #attr{name = <<"type">>,
                           default = normal,
@@ -534,9 +540,7 @@
                           label = '$lang'}],
            refs = [#ref{name = message_subject, label = '$subject'},
                    #ref{name = message_thread, min = 0, max = 1, label = '$thread'},
-                   #ref{name = message_body, label = '$body'},
-                   #ref{name = json_message, label = '$json_message'},
-                   #ref{name = speakerstats, min = 0, max = 1, label = '$speakerstats'}]}).
+                   #ref{name = message_body, label = '$body'}]}).
 
 -xml(presence_show,
      #elem{name = <<"show">>,

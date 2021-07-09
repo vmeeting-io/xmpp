@@ -506,6 +506,11 @@ do_decode(<<"body">>, <<"jabber:component:accept">>, El,
     decode_message_body(<<"jabber:component:accept">>,
                         Opts,
                         El);
+do_decode(<<"conference">>,
+          <<"http://jitsi.org/protocol/focus">>, El, Opts) ->
+    decode_iq_conference(<<"http://jitsi.org/protocol/focus">>,
+                         Opts,
+                         El);
 do_decode(<<"speakerstats">>,
           <<"http://jitsi.org/jitmeet">>, El, Opts) ->
     decode_speakerstats(<<"http://jitsi.org/jitmeet">>,
@@ -715,6 +720,8 @@ tags() ->
      {<<"body">>, <<"jabber:client">>},
      {<<"body">>, <<"jabber:server">>},
      {<<"body">>, <<"jabber:component:accept">>},
+     {<<"conference">>,
+      <<"http://jitsi.org/protocol/focus">>},
      {<<"speakerstats">>, <<"http://jitsi.org/jitmeet">>},
      {<<"json-message">>, <<"http://jitsi.org/jitmeet">>},
      {<<"subject">>, <<"jabber:client">>},
@@ -728,21 +735,12 @@ do_encode({iq, _, _, _, _, _, _, _} = Iq, TopXMLNS) ->
     encode_iq(Iq, TopXMLNS);
 do_encode({speakerstats, _} = Speakerstats, TopXMLNS) ->
     encode_speakerstats(Speakerstats, TopXMLNS);
+do_encode({iq_conference, _, _} = Conference,
+          TopXMLNS) ->
+    encode_iq_conference(Conference, TopXMLNS);
 do_encode({message_thread, _, _} = Thread, TopXMLNS) ->
     encode_message_thread(Thread, TopXMLNS);
-do_encode({message,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _} =
+do_encode({message, _, _, _, _, _, _, _, _, _, _} =
               Message,
           TopXMLNS) ->
     encode_message(Message, TopXMLNS);
@@ -800,19 +798,8 @@ do_encode({stream_start, _, _, _, _, _, _, _, _} =
 do_get_name({bind, _, _}) -> <<"bind">>;
 do_get_name({gone, _}) -> <<"gone">>;
 do_get_name({iq, _, _, _, _, _, _, _}) -> <<"iq">>;
-do_get_name({message,
-             _,
-             _,
-             _,
-             _,
-             _,
-             _,
-             _,
-             _,
-             _,
-             _,
-             _,
-             _}) ->
+do_get_name({iq_conference, _, _}) -> <<"conference">>;
+do_get_name({message, _, _, _, _, _, _, _, _, _, _}) ->
     <<"message">>;
 do_get_name({message_thread, _, _}) -> <<"thread">>;
 do_get_name({presence, _, _, _, _, _, _, _, _, _, _}) ->
@@ -846,19 +833,9 @@ do_get_ns({gone, _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-stanzas">>;
 do_get_ns({iq, _, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
-do_get_ns({message,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _,
-           _}) ->
+do_get_ns({iq_conference, _, _}) ->
+    <<"http://jitsi.org/protocol/focus">>;
+do_get_ns({message, _, _, _, _, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
 do_get_ns({message_thread, _, _}) ->
     <<"jabber:client">>;
@@ -915,8 +892,6 @@ get_els({message,
          _subject,
          _body,
          _thread,
-         _json_message,
-         _speakerstats,
          _sub_els,
          _meta}) ->
     _sub_els;
@@ -954,8 +929,6 @@ set_els({message,
          _subject,
          _body,
          _thread,
-         _json_message,
-         _speakerstats,
          _,
          _meta},
         _sub_els) ->
@@ -968,8 +941,6 @@ set_els({message,
      _subject,
      _body,
      _thread,
-     _json_message,
-     _speakerstats,
      _sub_els,
      _meta};
 set_els({presence,
@@ -1015,8 +986,9 @@ set_els({stream_features, _}, _sub_els) ->
 
 pp(iq, 7) -> [id, type, lang, from, to, sub_els, meta];
 pp(speakerstats, 1) -> [room];
+pp(iq_conference, 2) -> ['machine-uid', room];
 pp(message_thread, 2) -> [parent, data];
-pp(message, 12) ->
+pp(message, 10) ->
     [id,
      type,
      lang,
@@ -1025,8 +997,6 @@ pp(message, 12) ->
      subject,
      body,
      thread,
-     json_message,
-     speakerstats,
      sub_els,
      meta];
 pp(presence, 10) ->
@@ -1073,8 +1043,9 @@ pp(_, _) -> no.
 records() ->
     [{iq, 7},
      {speakerstats, 1},
+     {iq_conference, 2},
      {message_thread, 2},
-     {message, 12},
+     {message, 10},
      {presence, 10},
      {gone, 1},
      {redirect, 1},
@@ -6140,18 +6111,11 @@ encode_presence_show_cdata(_val, _acc) ->
 
 decode_message(__TopXMLNS, __Opts,
                {xmlel, <<"message">>, _attrs, _els}) ->
-    {Speakerstats,
-     Thread,
-     Subject,
-     Json_message,
-     Body,
-     __Els} =
+    {Thread, Subject, Body, __Els} =
         decode_message_els(__TopXMLNS,
                            __Opts,
                            _els,
                            undefined,
-                           undefined,
-                           [],
                            [],
                            [],
                            []),
@@ -6172,23 +6136,18 @@ decode_message(__TopXMLNS, __Opts,
      Subject,
      Body,
      Thread,
-     Json_message,
-     Speakerstats,
      __Els,
      #{}}.
 
-decode_message_els(__TopXMLNS, __Opts, [], Speakerstats,
-                   Thread, Subject, Json_message, Body, __Els) ->
-    {Speakerstats,
-     Thread,
+decode_message_els(__TopXMLNS, __Opts, [], Thread,
+                   Subject, Body, __Els) ->
+    {Thread,
      lists:reverse(Subject),
-     lists:reverse(Json_message),
      lists:reverse(Body),
      lists:reverse(__Els)};
 decode_message_els(__TopXMLNS, __Opts,
                    [{xmlel, <<"subject">>, _attrs, _} = _el | _els],
-                   Speakerstats, Thread, Subject, Json_message, Body,
-                   __Els) ->
+                   Thread, Subject, Body, __Els) ->
     case xmpp_codec:get_attr(<<"xmlns">>,
                              _attrs,
                              __TopXMLNS)
@@ -6197,56 +6156,47 @@ decode_message_els(__TopXMLNS, __Opts,
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                [decode_message_subject(<<"jabber:client">>,
                                                        __Opts,
                                                        _el)
                                 | Subject],
-                               Json_message,
                                Body,
                                __Els);
         <<"jabber:server">> ->
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                [decode_message_subject(<<"jabber:server">>,
                                                        __Opts,
                                                        _el)
                                 | Subject],
-                               Json_message,
                                Body,
                                __Els);
         <<"jabber:component:accept">> ->
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                [decode_message_subject(<<"jabber:component:accept">>,
                                                        __Opts,
                                                        _el)
                                 | Subject],
-                               Json_message,
                                Body,
                                __Els);
         _ ->
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                Subject,
-                               Json_message,
                                Body,
                                [_el | __Els])
     end;
 decode_message_els(__TopXMLNS, __Opts,
-                   [{xmlel, <<"thread">>, _attrs, _} = _el | _els],
-                   Speakerstats, Thread, Subject, Json_message, Body,
-                   __Els) ->
+                   [{xmlel, <<"thread">>, _attrs, _} = _el | _els], Thread,
+                   Subject, Body, __Els) ->
     case xmpp_codec:get_attr(<<"xmlns">>,
                              _attrs,
                              __TopXMLNS)
@@ -6255,53 +6205,44 @@ decode_message_els(__TopXMLNS, __Opts,
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                decode_message_thread(<<"jabber:client">>,
                                                      __Opts,
                                                      _el),
                                Subject,
-                               Json_message,
                                Body,
                                __Els);
         <<"jabber:server">> ->
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                decode_message_thread(<<"jabber:server">>,
                                                      __Opts,
                                                      _el),
                                Subject,
-                               Json_message,
                                Body,
                                __Els);
         <<"jabber:component:accept">> ->
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                decode_message_thread(<<"jabber:component:accept">>,
                                                      __Opts,
                                                      _el),
                                Subject,
-                               Json_message,
                                Body,
                                __Els);
         _ ->
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                Subject,
-                               Json_message,
                                Body,
                                [_el | __Els])
     end;
 decode_message_els(__TopXMLNS, __Opts,
-                   [{xmlel, <<"body">>, _attrs, _} = _el | _els],
-                   Speakerstats, Thread, Subject, Json_message, Body,
-                   __Els) ->
+                   [{xmlel, <<"body">>, _attrs, _} = _el | _els], Thread,
+                   Subject, Body, __Els) ->
     case xmpp_codec:get_attr(<<"xmlns">>,
                              _attrs,
                              __TopXMLNS)
@@ -6310,10 +6251,8 @@ decode_message_els(__TopXMLNS, __Opts,
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                Subject,
-                               Json_message,
                                [decode_message_body(<<"jabber:client">>,
                                                     __Opts,
                                                     _el)
@@ -6323,10 +6262,8 @@ decode_message_els(__TopXMLNS, __Opts,
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                Subject,
-                               Json_message,
                                [decode_message_body(<<"jabber:server">>,
                                                     __Opts,
                                                     _el)
@@ -6336,10 +6273,8 @@ decode_message_els(__TopXMLNS, __Opts,
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                Subject,
-                               Json_message,
                                [decode_message_body(<<"jabber:component:accept">>,
                                                     __Opts,
                                                     _el)
@@ -6349,88 +6284,21 @@ decode_message_els(__TopXMLNS, __Opts,
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                Subject,
-                               Json_message,
                                Body,
                                [_el | __Els])
     end;
 decode_message_els(__TopXMLNS, __Opts,
-                   [{xmlel, <<"json-message">>, _attrs, _} = _el | _els],
-                   Speakerstats, Thread, Subject, Json_message, Body,
-                   __Els) ->
-    case xmpp_codec:get_attr(<<"xmlns">>,
-                             _attrs,
-                             __TopXMLNS)
-        of
-        <<"http://jitsi.org/jitmeet">> ->
-            decode_message_els(__TopXMLNS,
-                               __Opts,
-                               _els,
-                               Speakerstats,
-                               Thread,
-                               Subject,
-                               [decode_json_message(<<"http://jitsi.org/jitmeet">>,
-                                                    __Opts,
-                                                    _el)
-                                | Json_message],
-                               Body,
-                               __Els);
-        _ ->
-            decode_message_els(__TopXMLNS,
-                               __Opts,
-                               _els,
-                               Speakerstats,
-                               Thread,
-                               Subject,
-                               Json_message,
-                               Body,
-                               [_el | __Els])
-    end;
-decode_message_els(__TopXMLNS, __Opts,
-                   [{xmlel, <<"speakerstats">>, _attrs, _} = _el | _els],
-                   Speakerstats, Thread, Subject, Json_message, Body,
-                   __Els) ->
-    case xmpp_codec:get_attr(<<"xmlns">>,
-                             _attrs,
-                             __TopXMLNS)
-        of
-        <<"http://jitsi.org/jitmeet">> ->
-            decode_message_els(__TopXMLNS,
-                               __Opts,
-                               _els,
-                               decode_speakerstats(<<"http://jitsi.org/jitmeet">>,
-                                                   __Opts,
-                                                   _el),
-                               Thread,
-                               Subject,
-                               Json_message,
-                               Body,
-                               __Els);
-        _ ->
-            decode_message_els(__TopXMLNS,
-                               __Opts,
-                               _els,
-                               Speakerstats,
-                               Thread,
-                               Subject,
-                               Json_message,
-                               Body,
-                               [_el | __Els])
-    end;
-decode_message_els(__TopXMLNS, __Opts,
-                   [{xmlel, _name, _attrs, _} = _el | _els], Speakerstats,
-                   Thread, Subject, Json_message, Body, __Els) ->
+                   [{xmlel, _name, _attrs, _} = _el | _els], Thread,
+                   Subject, Body, __Els) ->
     case proplists:get_bool(ignore_els, __Opts) of
         true ->
             decode_message_els(__TopXMLNS,
                                __Opts,
                                _els,
-                               Speakerstats,
                                Thread,
                                Subject,
-                               Json_message,
                                Body,
                                [_el | __Els]);
         false ->
@@ -6442,20 +6310,16 @@ decode_message_els(__TopXMLNS, __Opts,
                     decode_message_els(__TopXMLNS,
                                        __Opts,
                                        _els,
-                                       Speakerstats,
                                        Thread,
                                        Subject,
-                                       Json_message,
                                        Body,
                                        [_el | __Els]);
                 Mod ->
                     decode_message_els(__TopXMLNS,
                                        __Opts,
                                        _els,
-                                       Speakerstats,
                                        Thread,
                                        Subject,
-                                       Json_message,
                                        Body,
                                        [Mod:do_decode(_name,
                                                       __XMLNS,
@@ -6465,15 +6329,12 @@ decode_message_els(__TopXMLNS, __Opts,
             end
     end;
 decode_message_els(__TopXMLNS, __Opts, [_ | _els],
-                   Speakerstats, Thread, Subject, Json_message, Body,
-                   __Els) ->
+                   Thread, Subject, Body, __Els) ->
     decode_message_els(__TopXMLNS,
                        __Opts,
                        _els,
-                       Speakerstats,
                        Thread,
                        Subject,
-                       Json_message,
                        Body,
                        __Els).
 
@@ -6553,8 +6414,6 @@ encode_message({message,
                 Subject,
                 Body,
                 Thread,
-                Json_message,
-                Speakerstats,
                 __Els,
                 _},
                __TopXMLNS) ->
@@ -6566,17 +6425,13 @@ encode_message({message,
     _els = [xmpp_codec:encode(_el, __NewTopXMLNS)
             || _el <- __Els]
                ++
-               lists:reverse('encode_message_$speakerstats'(Speakerstats,
-                                                            __NewTopXMLNS,
-                                                            'encode_message_$thread'(Thread,
-                                                                                     __NewTopXMLNS,
-                                                                                     'encode_message_$subject'(Subject,
-                                                                                                               __NewTopXMLNS,
-                                                                                                               'encode_message_$json_message'(Json_message,
-                                                                                                                                              __NewTopXMLNS,
-                                                                                                                                              'encode_message_$body'(Body,
-                                                                                                                                                                     __NewTopXMLNS,
-                                                                                                                                                                     [])))))),
+               lists:reverse('encode_message_$thread'(Thread,
+                                                      __NewTopXMLNS,
+                                                      'encode_message_$subject'(Subject,
+                                                                                __NewTopXMLNS,
+                                                                                'encode_message_$body'(Body,
+                                                                                                       __NewTopXMLNS,
+                                                                                                       [])))),
     _attrs = 'encode_message_attr_xml:lang'(Lang,
                                             encode_message_attr_to(To,
                                                                    encode_message_attr_from(From,
@@ -6585,13 +6440,6 @@ encode_message({message,
                                                                                                                                             xmpp_codec:enc_xmlns_attrs(__NewTopXMLNS,
                                                                                                                                                                        __TopXMLNS)))))),
     {xmlel, <<"message">>, _attrs, _els}.
-
-'encode_message_$speakerstats'(undefined, __TopXMLNS,
-                               _acc) ->
-    _acc;
-'encode_message_$speakerstats'(Speakerstats, __TopXMLNS,
-                               _acc) ->
-    [encode_speakerstats(Speakerstats, __TopXMLNS) | _acc].
 
 'encode_message_$thread'(undefined, __TopXMLNS, _acc) ->
     _acc;
@@ -6605,16 +6453,6 @@ encode_message({message,
                               __TopXMLNS,
                               [encode_message_subject(Subject, __TopXMLNS)
                                | _acc]).
-
-'encode_message_$json_message'([], __TopXMLNS, _acc) ->
-    _acc;
-'encode_message_$json_message'([Json_message | _els],
-                               __TopXMLNS, _acc) ->
-    'encode_message_$json_message'(_els,
-                                   __TopXMLNS,
-                                   [encode_json_message(Json_message,
-                                                        __TopXMLNS)
-                                    | _acc]).
 
 'encode_message_$body'([], __TopXMLNS, _acc) -> _acc;
 'encode_message_$body'([Body | _els], __TopXMLNS,
@@ -6832,6 +6670,74 @@ decode_message_body_cdata(__TopXMLNS, _val) -> _val.
 encode_message_body_cdata(<<>>, _acc) -> _acc;
 encode_message_body_cdata(_val, _acc) ->
     [{xmlcdata, _val} | _acc].
+
+decode_iq_conference(__TopXMLNS, __Opts,
+                     {xmlel, <<"conference">>, _attrs, _els}) ->
+    {Machine_uid, Room} =
+        decode_iq_conference_attrs(__TopXMLNS,
+                                   _attrs,
+                                   undefined,
+                                   undefined),
+    {iq_conference, Machine_uid, Room}.
+
+decode_iq_conference_attrs(__TopXMLNS,
+                           [{<<"machine-uid">>, _val} | _attrs], _Machine_uid,
+                           Room) ->
+    decode_iq_conference_attrs(__TopXMLNS,
+                               _attrs,
+                               _val,
+                               Room);
+decode_iq_conference_attrs(__TopXMLNS,
+                           [{<<"room">>, _val} | _attrs], Machine_uid, _Room) ->
+    decode_iq_conference_attrs(__TopXMLNS,
+                               _attrs,
+                               Machine_uid,
+                               _val);
+decode_iq_conference_attrs(__TopXMLNS, [_ | _attrs],
+                           Machine_uid, Room) ->
+    decode_iq_conference_attrs(__TopXMLNS,
+                               _attrs,
+                               Machine_uid,
+                               Room);
+decode_iq_conference_attrs(__TopXMLNS, [], Machine_uid,
+                           Room) ->
+    {'decode_iq_conference_attr_machine-uid'(__TopXMLNS,
+                                             Machine_uid),
+     decode_iq_conference_attr_room(__TopXMLNS, Room)}.
+
+encode_iq_conference({iq_conference, Machine_uid, Room},
+                     __TopXMLNS) ->
+    __NewTopXMLNS =
+        xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/protocol/focus">>,
+                                    [],
+                                    __TopXMLNS),
+    _els = [],
+    _attrs = encode_iq_conference_attr_room(Room,
+                                            'encode_iq_conference_attr_machine-uid'(Machine_uid,
+                                                                                    xmpp_codec:enc_xmlns_attrs(__NewTopXMLNS,
+                                                                                                               __TopXMLNS))),
+    {xmlel, <<"conference">>, _attrs, _els}.
+
+'decode_iq_conference_attr_machine-uid'(__TopXMLNS,
+                                        undefined) ->
+    <<>>;
+'decode_iq_conference_attr_machine-uid'(__TopXMLNS,
+                                        _val) ->
+    _val.
+
+'encode_iq_conference_attr_machine-uid'(<<>>, _acc) ->
+    _acc;
+'encode_iq_conference_attr_machine-uid'(_val, _acc) ->
+    [{<<"machine-uid">>, _val} | _acc].
+
+decode_iq_conference_attr_room(__TopXMLNS, undefined) ->
+    <<>>;
+decode_iq_conference_attr_room(__TopXMLNS, _val) ->
+    _val.
+
+encode_iq_conference_attr_room(<<>>, _acc) -> _acc;
+encode_iq_conference_attr_room(_val, _acc) ->
+    [{<<"room">>, _val} | _acc].
 
 decode_speakerstats(__TopXMLNS, __Opts,
                     {xmlel, <<"speakerstats">>, _attrs, _els}) ->
