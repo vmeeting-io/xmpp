@@ -418,8 +418,8 @@
 -record(addresses, {list = [] :: [#address{}]}).
 -type addresses() :: #addresses{}.
 
--record(speakerstats, {room = <<>> :: binary(),
-                       xmlns = <<>> :: binary()}).
+-record(speakerstats, {xmlns = <<>> :: binary(),
+                       room = <<>> :: binary()}).
 -type speakerstats() :: #speakerstats{}.
 
 -record(starttls, {required = false :: boolean()}).
@@ -459,8 +459,7 @@
                        jid :: jid:jid()}).
 -type ps_subscribe() :: #ps_subscribe{}.
 
--record(iq_conference, {xmlns = <<>> :: binary(),
-                        'machine-uid' = <<>> :: binary(),
+-record(iq_conference, {'machine-uid' = <<>> :: binary(),
                         room = <<>> :: binary()}).
 -type iq_conference() :: #iq_conference{}.
 
@@ -787,8 +786,7 @@
                                error :: 'candidate-error' | 'proxy-error' | 'undefined'}).
 -type jingle_s5b_transport() :: #jingle_s5b_transport{}.
 
--record(json_message, {xmlns = <<>> :: binary(),
-                       data = <<>> :: binary()}).
+-record(json_message, {data = <<>> :: binary()}).
 -type json_message() :: #json_message{}.
 
 -record(delegated, {ns = <<>> :: binary(),

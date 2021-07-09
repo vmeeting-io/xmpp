@@ -464,26 +464,24 @@
      #elem{name = <<"json-message">>,
           xmlns = <<"http://jitsi.org/jitmeet">>,
           module = rfc6120,
-          result = {json_message, '$xmlns', '$data'},
-          cdata = #cdata{label = '$data'},
-          attrs = [#attr{name = <<"xmlns">>}]}).
+          result = {json_message, '$data'},
+          cdata = #cdata{label = '$data'}}).
 
 -xml(speakerstats,
      #elem{name = <<"speakerstats">>,
           xmlns = <<"http://jitsi.org/jitmeet">>,
           module = rfc6120,
-          result = {speakerstats, '$room', '$xmlns'},
-          attrs = [#attr{name = <<"room">>},
-                   #attr{name = <<"xmlns">>}]}).
+          result = {speakerstats, '$xmlns', '$room'},
+          attrs = [#attr{name = <<"xmlns">>},
+                   #attr{name = <<"room">>}]}).
 
 -xml(iq_conference,
      #elem{name = <<"conference">>,
           xmlns = <<"http://jitsi.org/protocol/focus">>,
           module = rfc6120,
-          result = {iq_conference, '$xmlns', '$machine-uid', '$room'},
+          result = {iq_conference, '$machine-uid', '$room'},
           attrs = [#attr{name = <<"machine-uid">>},
-                   #attr{name = <<"room">>},
-                   #attr{name = <<"xmlns">>}]}).
+                   #attr{name = <<"room">>}]}).
 
 -xml(message_body,
      #elem{name = <<"body">>,
