@@ -1728,6 +1728,7 @@ get_mod({delegated, _, _}) -> xep0355;
 get_mod({text, _, _}) -> xep0234;
 get_mod({jingle_ft_received, _, _}) -> xep0234;
 get_mod({bookmark_storage, _, _}) -> xep0048;
+get_mod({json_message, _, _}) -> rfc6120;
 get_mod({sasl_failure, _, _}) -> rfc6120;
 get_mod({xmpp_session, _}) -> rfc3921;
 get_mod({ping}) -> xep0199;

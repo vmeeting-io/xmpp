@@ -733,6 +733,9 @@ tags() ->
 
 do_encode({iq, _, _, _, _, _, _, _} = Iq, TopXMLNS) ->
     encode_iq(Iq, TopXMLNS);
+do_encode({json_message, _, _} = Json_message,
+          TopXMLNS) ->
+    encode_json_message(Json_message, TopXMLNS);
 do_encode({speakerstats, _} = Speakerstats, TopXMLNS) ->
     encode_speakerstats(Speakerstats, TopXMLNS);
 do_encode({iq_conference, _, _} = Conference,
@@ -799,6 +802,7 @@ do_get_name({bind, _, _}) -> <<"bind">>;
 do_get_name({gone, _}) -> <<"gone">>;
 do_get_name({iq, _, _, _, _, _, _, _}) -> <<"iq">>;
 do_get_name({iq_conference, _, _}) -> <<"conference">>;
+do_get_name({json_message, _, _}) -> <<"json-message">>;
 do_get_name({message, _, _, _, _, _, _, _, _, _, _}) ->
     <<"message">>;
 do_get_name({message_thread, _, _}) -> <<"thread">>;
@@ -835,6 +839,8 @@ do_get_ns({iq, _, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
 do_get_ns({iq_conference, _, _}) ->
     <<"http://jitsi.org/protocol/focus">>;
+do_get_ns({json_message, _, _}) ->
+    <<"http://jitsi.org/jitmeet">>;
 do_get_ns({message, _, _, _, _, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
 do_get_ns({message_thread, _, _}) ->
@@ -985,6 +991,7 @@ set_els({stream_features, _}, _sub_els) ->
     {stream_features, _sub_els}.
 
 pp(iq, 7) -> [id, type, lang, from, to, sub_els, meta];
+pp(json_message, 2) -> [lang, data];
 pp(speakerstats, 1) -> [room];
 pp(iq_conference, 2) -> ['machine-uid', room];
 pp(message_thread, 2) -> [parent, data];
@@ -1042,6 +1049,7 @@ pp(_, _) -> no.
 
 records() ->
     [{iq, 7},
+     {json_message, 2},
      {speakerstats, 1},
      {iq_conference, 2},
      {message_thread, 2},
@@ -6783,7 +6791,7 @@ decode_json_message(__TopXMLNS, __Opts,
     Lang = decode_json_message_attrs(__TopXMLNS,
                                      _attrs,
                                      undefined),
-    {text, Lang, Data}.
+    {json_message, Lang, Data}.
 
 decode_json_message_els(__TopXMLNS, __Opts, [], Data) ->
     decode_json_message_cdata(__TopXMLNS, Data);
@@ -6806,7 +6814,8 @@ decode_json_message_attrs(__TopXMLNS, [_ | _attrs],
 decode_json_message_attrs(__TopXMLNS, [], Lang) ->
     'decode_json_message_attr_xml:lang'(__TopXMLNS, Lang).
 
-encode_json_message({text, Lang, Data}, __TopXMLNS) ->
+encode_json_message({json_message, Lang, Data},
+                    __TopXMLNS) ->
     __NewTopXMLNS =
         xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/jitmeet">>,
                                     [],

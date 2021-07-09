@@ -464,7 +464,7 @@
      #elem{name = <<"json-message">>,
           xmlns = <<"http://jitsi.org/jitmeet">>,
           module = rfc6120,
-          result = {text, '$lang', '$data'},
+          result = {json_message, '$lang', '$data'},
           cdata = #cdata{label = '$data'},
           attrs = [#attr{name = <<"xml:lang">>,
                dec = {xmpp_lang, check, []},

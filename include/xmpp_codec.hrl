@@ -785,6 +785,10 @@
                                error :: 'candidate-error' | 'proxy-error' | 'undefined'}).
 -type jingle_s5b_transport() :: #jingle_s5b_transport{}.
 
+-record(json_message, {lang = <<>> :: binary(),
+                       data = <<>> :: binary()}).
+-type json_message() :: #json_message{}.
+
 -record(delegated, {ns = <<>> :: binary(),
                     attrs = [] :: [binary()]}).
 -type delegated() :: #delegated{}.
@@ -1301,6 +1305,7 @@
                         jingle_reason() |
                         jingle_s5b_candidate() |
                         jingle_s5b_transport() |
+                        json_message() |
                         last() |
                         legacy_auth() |
                         legacy_auth_feature() |
