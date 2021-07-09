@@ -1596,10 +1596,10 @@ get_mod(Name, XMLNS) ->
     xmpp_codec_external:lookup(Name, XMLNS).
 
 get_mod({rosterver_feature}) -> rfc6121;
+get_mod({speakerstats, _, _}) -> rfc6120;
 get_mod({legacy_auth_feature}) -> xep0078;
 get_mod({carbons_disable}) -> xep0280;
 get_mod({last, _, _}) -> xep0012;
-get_mod({iq_conference, _, _}) -> rfc6120;
 get_mod({compression, _}) -> xep0138;
 get_mod({mam_prefs, _, _, _, _}) -> xep0313;
 get_mod({upload_file_too_large, _, _}) -> xep0363;
@@ -1631,6 +1631,7 @@ get_mod({presence, _, _, _, _, _, _, _, _, _, _}) ->
     rfc6120;
 get_mod({streamhost, _, _, _}) -> xep0065;
 get_mod({iq, _, _, _, _, _, _, _}) -> rfc6120;
+get_mod({iq_conference, _, _, _}) -> rfc6120;
 get_mod({xdata_option, _, _}) -> xep0004;
 get_mod({x509_cert_chain, _, _}) -> xep0417;
 get_mod({vcard_geo, _, _}) -> xep0054;
@@ -1814,7 +1815,6 @@ get_mod({delegation_query, _, _}) -> xep0355;
 get_mod({jingle_error, _}) -> xep0166;
 get_mod({jingle_s5b_candidate, _, _, _, _, _, _}) ->
     xep0260;
-get_mod({speakerstats, _}) -> rfc6120;
 get_mod({sasl_success, _}) -> rfc6120;
 get_mod({compress, _}) -> xep0138;
 get_mod({xdata_field, _, _, _, _, _, _, _, _}) ->

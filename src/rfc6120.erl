@@ -733,13 +733,33 @@ tags() ->
 
 do_encode({iq, _, _, _, _, _, _, _} = Iq, TopXMLNS) ->
     encode_iq(Iq, TopXMLNS);
-do_encode({json_message, _, _} = Json_message,
+do_encode({json_message,
+           <<"http://jitsi.org/jitmeet">>,
+           _} =
+              Json_message,
           TopXMLNS) ->
     encode_json_message(Json_message, TopXMLNS);
-do_encode({speakerstats, _} = Speakerstats, TopXMLNS) ->
-    encode_speakerstats(Speakerstats, TopXMLNS);
-do_encode({iq_conference, _, _} = Conference,
+do_encode({json_message, <<>>, _} = Json_message,
+          TopXMLNS = <<"http://jitsi.org/jitmeet">>) ->
+    encode_json_message(Json_message, TopXMLNS);
+do_encode({speakerstats,
+           _,
+           <<"http://jitsi.org/jitmeet">>} =
+              Speakerstats,
           TopXMLNS) ->
+    encode_speakerstats(Speakerstats, TopXMLNS);
+do_encode({speakerstats, _, <<>>} = Speakerstats,
+          TopXMLNS = <<"http://jitsi.org/jitmeet">>) ->
+    encode_speakerstats(Speakerstats, TopXMLNS);
+do_encode({iq_conference,
+           <<"http://jitsi.org/protocol/focus">>,
+           _,
+           _} =
+              Conference,
+          TopXMLNS) ->
+    encode_iq_conference(Conference, TopXMLNS);
+do_encode({iq_conference, <<>>, _, _} = Conference,
+          TopXMLNS = <<"http://jitsi.org/protocol/focus">>) ->
     encode_iq_conference(Conference, TopXMLNS);
 do_encode({message_thread, _, _} = Thread, TopXMLNS) ->
     encode_message_thread(Thread, TopXMLNS);
@@ -801,7 +821,8 @@ do_encode({stream_start, _, _, _, _, _, _, _, _} =
 do_get_name({bind, _, _}) -> <<"bind">>;
 do_get_name({gone, _}) -> <<"gone">>;
 do_get_name({iq, _, _, _, _, _, _, _}) -> <<"iq">>;
-do_get_name({iq_conference, _, _}) -> <<"conference">>;
+do_get_name({iq_conference, _, _, _}) ->
+    <<"conference">>;
 do_get_name({json_message, _, _}) -> <<"json-message">>;
 do_get_name({message, _, _, _, _, _, _, _, _, _, _}) ->
     <<"message">>;
@@ -818,7 +839,7 @@ do_get_name({sasl_response, _}) -> <<"response">>;
 do_get_name({sasl_success, _}) -> <<"success">>;
 do_get_name({'see-other-host', _}) ->
     <<"see-other-host">>;
-do_get_name({speakerstats, _}) -> <<"speakerstats">>;
+do_get_name({speakerstats, _, _}) -> <<"speakerstats">>;
 do_get_name({stanza_error, _, _, _, _, _, _}) ->
     <<"error">>;
 do_get_name({starttls, _}) -> <<"starttls">>;
@@ -837,10 +858,8 @@ do_get_ns({gone, _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-stanzas">>;
 do_get_ns({iq, _, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
-do_get_ns({iq_conference, _, _}) ->
-    <<"http://jitsi.org/protocol/focus">>;
-do_get_ns({json_message, _, _}) ->
-    <<"http://jitsi.org/jitmeet">>;
+do_get_ns({iq_conference, Xmlns, _, _}) -> Xmlns;
+do_get_ns({json_message, Xmlns, _}) -> Xmlns;
 do_get_ns({message, _, _, _, _, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
 do_get_ns({message_thread, _, _}) ->
@@ -865,8 +884,7 @@ do_get_ns({sasl_success, _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-sasl">>;
 do_get_ns({'see-other-host', _}) ->
     <<"urn:ietf:params:xml:ns:xmpp-streams">>;
-do_get_ns({speakerstats, _}) ->
-    <<"http://jitsi.org/jitmeet">>;
+do_get_ns({speakerstats, _, Xmlns}) -> Xmlns;
 do_get_ns({stanza_error, _, _, _, _, _, _}) ->
     <<"jabber:client">>;
 do_get_ns({starttls, _}) ->
@@ -991,9 +1009,9 @@ set_els({stream_features, _}, _sub_els) ->
     {stream_features, _sub_els}.
 
 pp(iq, 7) -> [id, type, lang, from, to, sub_els, meta];
-pp(json_message, 2) -> [lang, data];
-pp(speakerstats, 1) -> [room];
-pp(iq_conference, 2) -> ['machine-uid', room];
+pp(json_message, 2) -> [xmlns, data];
+pp(speakerstats, 2) -> [room, xmlns];
+pp(iq_conference, 3) -> [xmlns, 'machine-uid', room];
 pp(message_thread, 2) -> [parent, data];
 pp(message, 10) ->
     [id,
@@ -1050,8 +1068,8 @@ pp(_, _) -> no.
 records() ->
     [{iq, 7},
      {json_message, 2},
-     {speakerstats, 1},
-     {iq_conference, 2},
+     {speakerstats, 2},
+     {iq_conference, 3},
      {message_thread, 2},
      {message, 10},
      {presence, 10},
@@ -6681,44 +6699,60 @@ encode_message_body_cdata(_val, _acc) ->
 
 decode_iq_conference(__TopXMLNS, __Opts,
                      {xmlel, <<"conference">>, _attrs, _els}) ->
-    {Machine_uid, Room} =
+    {Machine_uid, Room, Xmlns} =
         decode_iq_conference_attrs(__TopXMLNS,
                                    _attrs,
                                    undefined,
+                                   undefined,
                                    undefined),
-    {iq_conference, Machine_uid, Room}.
+    {iq_conference, Xmlns, Machine_uid, Room}.
 
 decode_iq_conference_attrs(__TopXMLNS,
                            [{<<"machine-uid">>, _val} | _attrs], _Machine_uid,
-                           Room) ->
+                           Room, Xmlns) ->
     decode_iq_conference_attrs(__TopXMLNS,
                                _attrs,
                                _val,
-                               Room);
+                               Room,
+                               Xmlns);
 decode_iq_conference_attrs(__TopXMLNS,
-                           [{<<"room">>, _val} | _attrs], Machine_uid, _Room) ->
+                           [{<<"room">>, _val} | _attrs], Machine_uid, _Room,
+                           Xmlns) ->
     decode_iq_conference_attrs(__TopXMLNS,
                                _attrs,
                                Machine_uid,
+                               _val,
+                               Xmlns);
+decode_iq_conference_attrs(__TopXMLNS,
+                           [{<<"xmlns">>, _val} | _attrs], Machine_uid, Room,
+                           _Xmlns) ->
+    decode_iq_conference_attrs(__TopXMLNS,
+                               _attrs,
+                               Machine_uid,
+                               Room,
                                _val);
 decode_iq_conference_attrs(__TopXMLNS, [_ | _attrs],
-                           Machine_uid, Room) ->
+                           Machine_uid, Room, Xmlns) ->
     decode_iq_conference_attrs(__TopXMLNS,
                                _attrs,
                                Machine_uid,
-                               Room);
+                               Room,
+                               Xmlns);
 decode_iq_conference_attrs(__TopXMLNS, [], Machine_uid,
-                           Room) ->
+                           Room, Xmlns) ->
     {'decode_iq_conference_attr_machine-uid'(__TopXMLNS,
                                              Machine_uid),
-     decode_iq_conference_attr_room(__TopXMLNS, Room)}.
+     decode_iq_conference_attr_room(__TopXMLNS, Room),
+     decode_iq_conference_attr_xmlns(__TopXMLNS, Xmlns)}.
 
-encode_iq_conference({iq_conference, Machine_uid, Room},
+encode_iq_conference({iq_conference,
+                      Xmlns,
+                      Machine_uid,
+                      Room},
                      __TopXMLNS) ->
-    __NewTopXMLNS =
-        xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/protocol/focus">>,
-                                    [],
-                                    __TopXMLNS),
+    __NewTopXMLNS = xmpp_codec:choose_top_xmlns(Xmlns,
+                                                [<<"http://jitsi.org/protocol/focus">>],
+                                                __TopXMLNS),
     _els = [],
     _attrs = encode_iq_conference_attr_room(Room,
                                             'encode_iq_conference_attr_machine-uid'(Machine_uid,
@@ -6747,27 +6781,48 @@ encode_iq_conference_attr_room(<<>>, _acc) -> _acc;
 encode_iq_conference_attr_room(_val, _acc) ->
     [{<<"room">>, _val} | _acc].
 
+decode_iq_conference_attr_xmlns(__TopXMLNS,
+                                undefined) ->
+    <<>>;
+decode_iq_conference_attr_xmlns(__TopXMLNS, _val) ->
+    _val.
+
 decode_speakerstats(__TopXMLNS, __Opts,
                     {xmlel, <<"speakerstats">>, _attrs, _els}) ->
-    Room = decode_speakerstats_attrs(__TopXMLNS,
-                                     _attrs,
-                                     undefined),
-    {speakerstats, Room}.
+    {Room, Xmlns} = decode_speakerstats_attrs(__TopXMLNS,
+                                              _attrs,
+                                              undefined,
+                                              undefined),
+    {speakerstats, Room, Xmlns}.
 
 decode_speakerstats_attrs(__TopXMLNS,
-                          [{<<"room">>, _val} | _attrs], _Room) ->
-    decode_speakerstats_attrs(__TopXMLNS, _attrs, _val);
+                          [{<<"room">>, _val} | _attrs], _Room, Xmlns) ->
+    decode_speakerstats_attrs(__TopXMLNS,
+                              _attrs,
+                              _val,
+                              Xmlns);
+decode_speakerstats_attrs(__TopXMLNS,
+                          [{<<"xmlns">>, _val} | _attrs], Room, _Xmlns) ->
+    decode_speakerstats_attrs(__TopXMLNS,
+                              _attrs,
+                              Room,
+                              _val);
 decode_speakerstats_attrs(__TopXMLNS, [_ | _attrs],
-                          Room) ->
-    decode_speakerstats_attrs(__TopXMLNS, _attrs, Room);
-decode_speakerstats_attrs(__TopXMLNS, [], Room) ->
-    decode_speakerstats_attr_room(__TopXMLNS, Room).
+                          Room, Xmlns) ->
+    decode_speakerstats_attrs(__TopXMLNS,
+                              _attrs,
+                              Room,
+                              Xmlns);
+decode_speakerstats_attrs(__TopXMLNS, [], Room,
+                          Xmlns) ->
+    {decode_speakerstats_attr_room(__TopXMLNS, Room),
+     decode_speakerstats_attr_xmlns(__TopXMLNS, Xmlns)}.
 
-encode_speakerstats({speakerstats, Room}, __TopXMLNS) ->
-    __NewTopXMLNS =
-        xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/jitmeet">>,
-                                    [],
-                                    __TopXMLNS),
+encode_speakerstats({speakerstats, Room, Xmlns},
+                    __TopXMLNS) ->
+    __NewTopXMLNS = xmpp_codec:choose_top_xmlns(Xmlns,
+                                                [<<"http://jitsi.org/jitmeet">>],
+                                                __TopXMLNS),
     _els = [],
     _attrs = encode_speakerstats_attr_room(Room,
                                            xmpp_codec:enc_xmlns_attrs(__NewTopXMLNS,
@@ -6782,16 +6837,21 @@ encode_speakerstats_attr_room(<<>>, _acc) -> _acc;
 encode_speakerstats_attr_room(_val, _acc) ->
     [{<<"room">>, _val} | _acc].
 
+decode_speakerstats_attr_xmlns(__TopXMLNS, undefined) ->
+    <<>>;
+decode_speakerstats_attr_xmlns(__TopXMLNS, _val) ->
+    _val.
+
 decode_json_message(__TopXMLNS, __Opts,
                     {xmlel, <<"json-message">>, _attrs, _els}) ->
     Data = decode_json_message_els(__TopXMLNS,
                                    __Opts,
                                    _els,
                                    <<>>),
-    Lang = decode_json_message_attrs(__TopXMLNS,
-                                     _attrs,
-                                     undefined),
-    {json_message, Lang, Data}.
+    Xmlns = decode_json_message_attrs(__TopXMLNS,
+                                      _attrs,
+                                      undefined),
+    {json_message, Xmlns, Data}.
 
 decode_json_message_els(__TopXMLNS, __Opts, [], Data) ->
     decode_json_message_cdata(__TopXMLNS, Data);
@@ -6806,43 +6866,28 @@ decode_json_message_els(__TopXMLNS, __Opts, [_ | _els],
     decode_json_message_els(__TopXMLNS, __Opts, _els, Data).
 
 decode_json_message_attrs(__TopXMLNS,
-                          [{<<"xml:lang">>, _val} | _attrs], _Lang) ->
+                          [{<<"xmlns">>, _val} | _attrs], _Xmlns) ->
     decode_json_message_attrs(__TopXMLNS, _attrs, _val);
 decode_json_message_attrs(__TopXMLNS, [_ | _attrs],
-                          Lang) ->
-    decode_json_message_attrs(__TopXMLNS, _attrs, Lang);
-decode_json_message_attrs(__TopXMLNS, [], Lang) ->
-    'decode_json_message_attr_xml:lang'(__TopXMLNS, Lang).
+                          Xmlns) ->
+    decode_json_message_attrs(__TopXMLNS, _attrs, Xmlns);
+decode_json_message_attrs(__TopXMLNS, [], Xmlns) ->
+    decode_json_message_attr_xmlns(__TopXMLNS, Xmlns).
 
-encode_json_message({json_message, Lang, Data},
+encode_json_message({json_message, Xmlns, Data},
                     __TopXMLNS) ->
-    __NewTopXMLNS =
-        xmpp_codec:choose_top_xmlns(<<"http://jitsi.org/jitmeet">>,
-                                    [],
-                                    __TopXMLNS),
+    __NewTopXMLNS = xmpp_codec:choose_top_xmlns(Xmlns,
+                                                [<<"http://jitsi.org/jitmeet">>],
+                                                __TopXMLNS),
     _els = encode_json_message_cdata(Data, []),
-    _attrs = 'encode_json_message_attr_xml:lang'(Lang,
-                                                 xmpp_codec:enc_xmlns_attrs(__NewTopXMLNS,
-                                                                            __TopXMLNS)),
+    _attrs = xmpp_codec:enc_xmlns_attrs(__NewTopXMLNS,
+                                        __TopXMLNS),
     {xmlel, <<"json-message">>, _attrs, _els}.
 
-'decode_json_message_attr_xml:lang'(__TopXMLNS,
-                                    undefined) ->
+decode_json_message_attr_xmlns(__TopXMLNS, undefined) ->
     <<>>;
-'decode_json_message_attr_xml:lang'(__TopXMLNS, _val) ->
-    case catch xmpp_lang:check(_val) of
-        {'EXIT', _} ->
-            erlang:error({xmpp_codec,
-                          {bad_attr_value,
-                           <<"xml:lang">>,
-                           <<"json-message">>,
-                           __TopXMLNS}});
-        _res -> _res
-    end.
-
-'encode_json_message_attr_xml:lang'(<<>>, _acc) -> _acc;
-'encode_json_message_attr_xml:lang'(_val, _acc) ->
-    [{<<"xml:lang">>, _val} | _acc].
+decode_json_message_attr_xmlns(__TopXMLNS, _val) ->
+    _val.
 
 decode_json_message_cdata(__TopXMLNS, <<>>) -> <<>>;
 decode_json_message_cdata(__TopXMLNS, _val) -> _val.
