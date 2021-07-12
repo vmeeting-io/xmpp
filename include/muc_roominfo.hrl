@@ -18,7 +18,8 @@
                     {'subject', binary()} |
                     {'subjectmod', boolean()} |
                     {'pubsub', binary()} |
-                    {'changesubject', boolean()}.
+                    {'changesubject', boolean()} |
+                    {'lobbyroom', binary()}.
 -type result() :: [property()].
 
 -type options(T) :: [{binary(), T}].
@@ -37,7 +38,8 @@
       {'subject', binary()} |
       {'subjectmod', boolean() | undefined} |
       {'pubsub', binary() | undefined} |
-      {'changesubject', boolean() | undefined}.
+      {'changesubject', boolean() | undefined} |
+      {'lobbyroom', binary()}.
 -type form() :: [form_property() | xdata_field()].
 
 -type error_reason() :: {form_type_mismatch, binary()} |

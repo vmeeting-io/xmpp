@@ -80,6 +80,11 @@
       type='boolean'
       label='Occupants May Change the Subject'>
   </field>
+  <field
+      var='muc#roominfo_lobbyroom'
+      type='text-single'
+      label='Lobby room jid'>
+  </field>
 </form_type>
 
 <!--
