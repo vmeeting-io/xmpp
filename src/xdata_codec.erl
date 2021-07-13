@@ -5,7 +5,7 @@
 %%% @end
 %%%
 %%%
-%%% Copyright (C) 2002-2020 ProcessOne, SARL. All Rights Reserved.
+%%% Copyright (C) 2002-2021 ProcessOne, SARL. All Rights Reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -238,8 +238,8 @@ compile_element(#xmlel{name = <<"form_type">>, children = Els} = Form,
 	mk_encoders(Fs, State),
 	ErlData = get(outbuf),
 	ok = file:write_file(filename:join(ErlDir, OutErl), ErlData),
-	ok = erl_tidy:file(filename:join(ErlDir, OutErl),
-			   [{backups, false}, {keep_unused, true}]),
+	%% ok = erl_tidy:file(filename:join(ErlDir, OutErl),
+	%% 		   [{backups, false}, {keep_unused, true}]),
 	put(outbuf, []),
 	mk_type_definitions(Fs, State),
 	HrlData = get(outbuf),

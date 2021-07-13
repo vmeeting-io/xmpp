@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%%
-%%% Copyright (C) 2002-2020 ProcessOne, SARL. All Rights Reserved.
+%%% Copyright (C) 2002-2021 ProcessOne, SARL. All Rights Reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -447,7 +447,7 @@ handle_info({tcp, _, Data}, #{socket := Socket} = State) ->
       end);
 % Skip new tcp messages after socket get removed from state
 handle_info({tcp, _, _}, State) ->
-	State;
+    noreply(State);
 handle_info({tcp_closed, _}, State) ->
     handle_info({'$gen_event', closed}, State);
 handle_info({tcp_error, _, Reason}, State) ->
@@ -479,7 +479,7 @@ code_change(OldVsn, State, Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
--spec init_state(state(), [proplists:property()]) -> state().
+-spec init_state(state(), [proplists:property()]) -> state() | {stop, state()}.
 init_state(#{socket := Socket, mod := Mod} = State, Opts) ->
     Encrypted = proplists:get_bool(tls, Opts),
     State1 = State#{stream_direction => in,

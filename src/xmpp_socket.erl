@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%%
-%%% Copyright (C) 2002-2020 ProcessOne, SARL. All Rights Reserved.
+%%% Copyright (C) 2002-2021 ProcessOne, SARL. All Rights Reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -91,6 +91,9 @@
 	    {ok, true} -> error_logger:info_msg(Fmt, Args);
 	    _ -> false
 	end).
+
+-dialyzer({no_match, send_xml/2}).
+-dialyzer({no_unused, stringify_stream_element/1}).
 
 %%====================================================================
 %% API
