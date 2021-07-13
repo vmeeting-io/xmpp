@@ -81,6 +81,21 @@
       label='Occupants May Change the Subject'>
   </field>
   <field
+      var='muc#roominfo_meetingId'
+      type='text-single'
+      label='Unique meeting ID'>
+  </field>
+  <field
+      var='muc#roominfo_timeremained'
+      type='text-single'
+      label='timeremained'>
+  </field>
+  <field
+      var='muc#roominfo_userDeviceAccessDisabled'
+      type='boolean'
+      label='userDeviceAccessDisabled'>
+  </field>
+  <field
       var='muc#roominfo_lobbyroom'
       type='text-single'
       label='Lobby room jid'>

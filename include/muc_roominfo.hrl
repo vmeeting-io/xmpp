@@ -19,6 +19,9 @@
                     {'subjectmod', boolean()} |
                     {'pubsub', binary()} |
                     {'changesubject', boolean()} |
+                    {'meetingId', binary()} |
+                    {'timeremained', binary()} |
+                    {'userDeviceAccessDisabled', boolean()} |
                     {'lobbyroom', binary()}.
 -type result() :: [property()].
 
@@ -39,6 +42,9 @@
       {'subjectmod', boolean() | undefined} |
       {'pubsub', binary() | undefined} |
       {'changesubject', boolean() | undefined} |
+      {'meetingId', binary()} |
+      {'timeremained', binary()} |
+      {'userDeviceAccessDisabled', boolean() | undefined} |
       {'lobbyroom', binary()}.
 -type form() :: [form_property() | xdata_field()].
 
