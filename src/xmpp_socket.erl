@@ -45,6 +45,7 @@
 	 pp/1,
 	 sockname/1,
 	 peername/1,
+	 get_query/1,
 	 send_ws_ping/1, get_negotiated_cipher/1, get_tls_last_message/2]).
 
 -include("xmpp.hrl").
@@ -83,6 +84,7 @@
 -callback peername(ext_socket()) -> {ok, endpoint()} | {error, inet:posix()}.
 -callback setopts(ext_socket(), [{active, once}]) -> ok | {error, inet:posix()}.
 -callback get_peer_certificate(ext_socket(), plain|otp|der) -> {ok, cert() | binary()} | error.
+-callback get_query(pid()) -> [{binary() | nokey, binary()}].
 
 -optional_callbacks([get_peer_certificate/2]).
 
@@ -157,6 +159,13 @@ starttls(#socket_state{sockmod = gen_tcp,
     end;
 starttls(_, _) ->
     erlang:error(badarg).
+
+-spec get_query(socket_state()) -> [{binary() | nokey, binary()}].
+get_query(#socket_state{sockmod = SockMod, socket = Socket} = SocketData) ->
+	% Refer to ejabberd_bosh or ejabberd_http_ws for data type of Socket.
+	% FIXME: better way to get Socket PID?
+	SockPid = element(2, Socket),
+	SockMod:get_query(SockPid).
 
 compress(SocketData) -> compress(SocketData, undefined).
 

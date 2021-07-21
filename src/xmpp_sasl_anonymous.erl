@@ -24,7 +24,7 @@
 
 -include_lib("xmpp.hrl").
 
--record(state, {ws_pid :: binary(), host :: binary()}).
+-record(state, {xmpp_socket ::xmpp_socket:socket_state(), host :: binary()}).
 
 -type error_reason() :: not_authorized.
 -export_type([error_reason/0]).
@@ -34,20 +34,20 @@ format_error(not_authorized) ->
     {'not-authorized', <<"Invalid jitsi jwt token">>}.
 
 mech_new(_Mech, Socket, Host, _GetPassword, _CheckPassword, _CheckPasswordDigest) ->
-    % TODO: a better method to extract WsPid
-    WsPid = element(2, element(3, Socket)),
-    #state{ws_pid = WsPid, host = Host}.
+    #state{xmpp_socket = Socket, host = Host}.
 
-mech_step(#state{ws_pid = WsPid, host = Host}, _ClientIn) ->
-    JWTResult = ejabberd_hooks:run_fold(check_jwt_token, Host, ok, [WsPid, Host]),
+mech_step(#state{xmpp_socket = XmppSocket, host = Host}, _ClientIn) ->
+    JWTResult = ejabberd_hooks:run_fold(check_jwt_token, Host, ok, [XmppSocket, Host]),
 
     User = iolist_to_binary([p1_rand:get_string(),
                              integer_to_binary(p1_time_compat:unique_integer([positive]))]),
 
     if JWTResult == ok ->
+        error_logger:info_msg("verification succeeded for ~p~n", [User]),
         {ok, [{username, User},
         {authzid, User},
         {auth_module, anonymous}]};
     true ->
+        error_logger:warning_msg("verification failed for ~p~n", [User]),
         {error, not_authorized, User}
     end.
