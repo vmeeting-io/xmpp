@@ -24,7 +24,8 @@
                     {'userDeviceAccessDisabled', boolean()} |
                     {'lobbyroom', binary()} |
                     {'isbreakout', boolean()} |
-                    {'breakout_main_room', binary()}.
+                    {'breakout_main_room', binary()} |
+                    {'timer_end_time', binary()}.
 -type result() :: [property()].
 
 -type options(T) :: [{binary(), T}].
@@ -49,7 +50,8 @@
       {'userDeviceAccessDisabled', boolean() | undefined} |
       {'lobbyroom', binary()} |
       {'isbreakout', boolean() | undefined} |
-      {'breakout_main_room', binary()}.
+      {'breakout_main_room', binary()} |
+      {'timer_end_time', binary()}.
 -type form() :: [form_property() | xdata_field()].
 
 -type error_reason() :: {form_type_mismatch, binary()} |

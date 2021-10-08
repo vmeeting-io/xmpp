@@ -86,7 +86,8 @@
               userDeviceAccessDisabled |
               lobbyroom |
               isbreakout |
-              breakout_main_room]) -> [xdata_field()].
+              breakout_main_room |
+              timer_end_time]) -> [xdata_field()].
 
 dec_int(Val) -> dec_int(Val, infinity, infinity).
 
@@ -292,6 +293,11 @@ encode(List, Lang, Required) ->
                                              Lang,
                                              lists:member(breakout_main_room,
                                                           Required))];
+              {timer_end_time, Val} ->
+                  [encode_timer_end_time(Val,
+                                         Lang,
+                                         lists:member(timer_end_time,
+                                                      Required))];
               #xdata_field{} -> [Opt]
           end
           || Opt <- List],
@@ -1036,6 +1042,46 @@ do_decode([#xdata_field{var =
                   {too_many_values,
                    <<"muc#roominfo_breakout_main_room">>,
                    XMLNS}});
+do_decode([#xdata_field{var =
+                            <<"muc#roominfo_timer_end_time">>,
+                        values = [Value]}
+           | Fs],
+          XMLNS, Required, Acc) ->
+    try Value of
+        Result ->
+            do_decode(Fs,
+                      XMLNS,
+                      lists:delete(<<"muc#roominfo_timer_end_time">>,
+                                   Required),
+                      [{timer_end_time, Result} | Acc])
+    catch
+        _:_ ->
+            erlang:error({?MODULE,
+                          {bad_var_value,
+                           <<"muc#roominfo_timer_end_time">>,
+                           XMLNS}})
+    end;
+do_decode([#xdata_field{var =
+                            <<"muc#roominfo_timer_end_time">>,
+                        values = []} =
+               F
+           | Fs],
+          XMLNS, Required, Acc) ->
+    do_decode([F#xdata_field{var =
+                                 <<"muc#roominfo_timer_end_time">>,
+                             values = [<<>>]}
+               | Fs],
+              XMLNS,
+              Required,
+              Acc);
+do_decode([#xdata_field{var =
+                            <<"muc#roominfo_timer_end_time">>}
+           | _],
+          XMLNS, _, _) ->
+    erlang:error({?MODULE,
+                  {too_many_values,
+                   <<"muc#roominfo_timer_end_time">>,
+                   XMLNS}});
 do_decode([#xdata_field{var = Var} | Fs], XMLNS,
           Required, Acc) ->
     if Var /= <<"FORM_TYPE">> ->
@@ -1382,3 +1428,17 @@ encode_breakout_main_room(Value, Lang, IsRequired) ->
                      xmpp_tr:tr(Lang,
                                 ?T("The main room associated with this breakout "
                                    "room"))}.
+
+-spec encode_timer_end_time(binary(), binary(),
+                            boolean()) -> xdata_field().
+
+encode_timer_end_time(Value, Lang, IsRequired) ->
+    Values = case Value of
+                 <<>> -> [];
+                 Value -> [Value]
+             end,
+    Opts = [],
+    #xdata_field{var = <<"muc#roominfo_timer_end_time">>,
+                 values = Values, required = IsRequired,
+                 type = 'text-single', options = Opts, desc = <<>>,
+                 label = xmpp_tr:tr(Lang, ?T("End time for timer."))}.
