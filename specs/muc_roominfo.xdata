@@ -115,6 +115,11 @@
       type='text-single'
       label='End time for timer.'>
   </field>
+  <field
+      var='muc#roominfo_timer_initiator'
+      type='text-single'
+      label='Name of the initiator of timer.'>
+  </field>
 </form_type>
 
 <!--
