@@ -120,6 +120,11 @@
       type='text-single'
       label='Name of the initiator of timer.'>
   </field>
+  <field
+      var='muc#roominfo_facedetect'
+      type='boolean'
+      label='Is enabled face detect?'>
+  </field>
 </form_type>
 
 <!--
