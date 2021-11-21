@@ -110,6 +110,21 @@
       type='text-single'
       label='The main room associated with this breakout room'>
   </field>
+  <field
+      var='muc#roominfo_timer_end_time'
+      type='text-single'
+      label='End time for timer.'>
+  </field>
+  <field
+      var='muc#roominfo_timer_initiator'
+      type='text-single'
+      label='Name of the initiator of timer.'>
+  </field>
+  <field
+      var='muc#roominfo_facedetect'
+      type='boolean'
+      label='Is enabled face detect?'>
+  </field>
 </form_type>
 
 <!--
