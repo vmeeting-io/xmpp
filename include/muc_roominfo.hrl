@@ -21,7 +21,6 @@
                     {'changesubject', boolean()} |
                     {'meetingId', binary()} |
                     {'timeremained', binary()} |
-                    {'userDeviceAccessDisabled', boolean()} |
                     {'lobbyroom', binary()} |
                     {'isbreakout', boolean()} |
                     {'breakout_main_room', binary()} |
@@ -49,7 +48,6 @@
       {'changesubject', boolean() | undefined} |
       {'meetingId', binary()} |
       {'timeremained', binary()} |
-      {'userDeviceAccessDisabled', boolean() | undefined} |
       {'lobbyroom', binary()} |
       {'isbreakout', boolean() | undefined} |
       {'breakout_main_room', binary()} |

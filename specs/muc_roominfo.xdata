@@ -91,11 +91,6 @@
       label='timeremained'>
   </field>
   <field
-      var='muc#roominfo_userDeviceAccessDisabled'
-      type='boolean'
-      label='userDeviceAccessDisabled'>
-  </field>
-  <field
       var='muc#roominfo_lobbyroom'
       type='text-single'
       label='Lobby room jid'>

@@ -83,7 +83,6 @@
               changesubject |
               meetingId |
               timeremained |
-              userDeviceAccessDisabled |
               lobbyroom |
               isbreakout |
               breakout_main_room |
@@ -277,11 +276,6 @@ encode(List, Lang, Required) ->
                   [encode_timeremained(Val,
                                        Lang,
                                        lists:member(timeremained, Required))];
-              {userDeviceAccessDisabled, Val} ->
-                  [encode_userDeviceAccessDisabled(Val,
-                                                   Lang,
-                                                   lists:member(userDeviceAccessDisabled,
-                                                                Required))];
               {lobbyroom, Val} ->
                   [encode_lobbyroom(Val,
                                     Lang,
@@ -898,46 +892,6 @@ do_decode([#xdata_field{var =
                    <<"muc#roominfo_timeremained">>,
                    XMLNS}});
 do_decode([#xdata_field{var =
-                            <<"muc#roominfo_userDeviceAccessDisabled">>,
-                        values = [Value]}
-           | Fs],
-          XMLNS, Required, Acc) ->
-    try dec_bool(Value) of
-        Result ->
-            do_decode(Fs,
-                      XMLNS,
-                      lists:delete(<<"muc#roominfo_userDeviceAccessDisabled">>,
-                                   Required),
-                      [{userDeviceAccessDisabled, Result} | Acc])
-    catch
-        _:_ ->
-            erlang:error({?MODULE,
-                          {bad_var_value,
-                           <<"muc#roominfo_userDeviceAccessDisabled">>,
-                           XMLNS}})
-    end;
-do_decode([#xdata_field{var =
-                            <<"muc#roominfo_userDeviceAccessDisabled">>,
-                        values = []} =
-               F
-           | Fs],
-          XMLNS, Required, Acc) ->
-    do_decode([F#xdata_field{var =
-                                 <<"muc#roominfo_userDeviceAccessDisabled">>,
-                             values = [<<>>]}
-               | Fs],
-              XMLNS,
-              Required,
-              Acc);
-do_decode([#xdata_field{var =
-                            <<"muc#roominfo_userDeviceAccessDisabled">>}
-           | _],
-          XMLNS, _, _) ->
-    erlang:error({?MODULE,
-                  {too_many_values,
-                   <<"muc#roominfo_userDeviceAccessDisabled">>,
-                   XMLNS}});
-do_decode([#xdata_field{var =
                             <<"muc#roominfo_lobbyroom">>,
                         values = [Value]}
            | Fs],
@@ -1453,24 +1407,6 @@ encode_timeremained(Value, Lang, IsRequired) ->
                  values = Values, required = IsRequired,
                  type = 'text-single', options = Opts, desc = <<>>,
                  label = xmpp_tr:tr(Lang, ?T("timeremained"))}.
-
--spec encode_userDeviceAccessDisabled(boolean() |
-                                      undefined,
-                                      binary(), boolean()) -> xdata_field().
-
-encode_userDeviceAccessDisabled(Value, Lang,
-                                IsRequired) ->
-    Values = case Value of
-                 undefined -> [];
-                 Value -> [enc_bool(Value)]
-             end,
-    Opts = [],
-    #xdata_field{var =
-                     <<"muc#roominfo_userDeviceAccessDisabled">>,
-                 values = Values, required = IsRequired, type = boolean,
-                 options = Opts, desc = <<>>,
-                 label =
-                     xmpp_tr:tr(Lang, ?T("userDeviceAccessDisabled"))}.
 
 -spec encode_lobbyroom(binary(), binary(),
                        boolean()) -> xdata_field().
