@@ -196,16 +196,6 @@
       var='mam'
       type='boolean'
       label='Enable message archiving'/>
-  <field
-      var='muc#roominfo_isbreakout'
-      type='boolean'
-      label='Is this a breakout room?'>
-  </field>
-  <field
-      var='muc#roominfo_breakout_main_room'
-      type='text-single'
-      label='The main room associated with this breakout room'>
-  </field>
 </form_type>
 
 <!--

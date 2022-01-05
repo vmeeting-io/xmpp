@@ -42,9 +42,7 @@
                     {'roomowners', [jid:jid()]} |
                     {'roomsecret', binary()} |
                     {'whois', 'whois'()} |
-                    {'mam', boolean()} |
-                    {'roominfo_isbreakout', boolean()} |
-                    {'roominfo_breakout_main_room', binary()}.
+                    {'mam', boolean()}.
 -type result() :: [property()].
 
 -type options(T) :: [{binary(), T}].
@@ -88,9 +86,7 @@
       {'roomsecret', binary()} |
       {'whois', 'whois'() | undefined} |
       {'whois', 'whois'() | undefined, options('whois'())} |
-      {'mam', boolean() | undefined} |
-      {'roominfo_isbreakout', boolean() | undefined} |
-      {'roominfo_breakout_main_room', binary()}.
+      {'mam', boolean() | undefined}.
 -type form() :: [form_property() | xdata_field()].
 
 -type error_reason() :: {form_type_mismatch, binary()} |
