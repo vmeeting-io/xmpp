@@ -91,6 +91,11 @@
       label='timeremained'>
   </field>
   <field
+      var='muc#roominfo_sttenabled'
+      type='boolean'
+      label='Is enabled stt?'>
+  </field>
+  <field
       var='muc#roominfo_lobbyroom'
       type='text-single'
       label='Lobby room jid'>
