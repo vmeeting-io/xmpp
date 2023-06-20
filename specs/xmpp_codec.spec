@@ -3772,6 +3772,14 @@
 	   cdata = #cdata{label = '$name',
 			  required = true}}).
 
+-xml(email,
+     #elem{name = <<"email">>,
+        xmlns = <<"http://vmeeting.io/protocol/email">>,
+        module = 'xep0172',
+        result = {email, '$email'},
+        cdata = #cdata{label = '$email',
+                 required = true}}).
+
 -xml(address,
      #elem{name = <<"address">>,
 	   xmlns = <<"http://jabber.org/protocol/address">>,

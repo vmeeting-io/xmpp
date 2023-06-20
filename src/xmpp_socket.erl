@@ -231,7 +231,7 @@ send_ws_ping(SocketData) ->
 
 -spec send(socket_state(), iodata()) -> ok | {error, closed | inet:posix()}.
 send(#socket_state{sockmod = SockMod, socket = Socket} = SocketData, Data) ->
-    ?dbg("(~s) Send XML on stream = ~p", [pp(SocketData), Data]),
+    % ?dbg("(~s) Send XML on stream = ~p", [pp(SocketData), Data]),
     try SockMod:send(Socket, Data) of
 	{error, einval} -> {error, closed};
 	Result -> Result
@@ -243,8 +243,8 @@ send(#socket_state{sockmod = SockMod, socket = Socket} = SocketData, Data) ->
 
 -spec send_xml(socket_state(), stream_element()) -> ok | {error, any()}.
 send_xml(#socket_state{sockmod = SockMod, socket = Socket} = SocketData, El) ->
-    ?dbg("(~s) Send XML on stream = ~p", [pp(SocketData),
-					  stringify_stream_element(El)]),
+    % ?dbg("(~s) Send XML on stream = ~p", [pp(SocketData),
+	% 				  stringify_stream_element(El)]),
     SockMod:send_xml(Socket, El).
 
 stringify_stream_element({xmlstreamstart, Name, Attrs}) ->

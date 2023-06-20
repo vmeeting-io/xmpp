@@ -487,11 +487,6 @@
 -record(feature_csi, {}).
 -type feature_csi() :: #feature_csi{}.
 
--record(disco_item, {jid :: jid:jid(),
-                     name = <<>> :: binary(),
-                     node = <<>> :: binary()}).
--type disco_item() :: #disco_item{}.
-
 -record(report, {reason :: 'abuse' | 'spam' | 'undefined',
                  text = [] :: [#text{}]}).
 -type report() :: #report{}.
@@ -505,6 +500,11 @@
 
 -record(block, {items = [] :: [#block_item{}]}).
 -type block() :: #block{}.
+
+-record(disco_item, {jid :: jid:jid(),
+                     name = <<>> :: binary(),
+                     node = <<>> :: binary()}).
+-type disco_item() :: #disco_item{}.
 
 -record(compression, {methods = [] :: [binary()]}).
 -type compression() :: #compression{}.
@@ -957,6 +957,9 @@
                     ctry :: 'undefined' | binary()}).
 -type vcard_adr() :: #vcard_adr{}.
 
+-record(email, {email = <<>> :: binary()}).
+-type email() :: #email{}.
+
 -record(search_item, {jid :: jid:jid(),
                       first :: 'undefined' | binary(),
                       last :: 'undefined' | binary(),
@@ -1273,6 +1276,7 @@
                         disco_info() |
                         disco_item() |
                         disco_items() |
+                        email() |
                         expire() |
                         feature_csi() |
                         feature_register() |
