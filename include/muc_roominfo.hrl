@@ -27,7 +27,8 @@
                     {'breakout_main_room', binary()} |
                     {'timer_end_time', binary()} |
                     {'timer_initiator', binary()} |
-                    {'facedetect', boolean()}.
+                    {'facedetect', boolean()} |
+                    {'created_timestamp', binary()}.
 -type result() :: [property()].
 
 -type options(T) :: [{binary(), T}].
@@ -55,7 +56,8 @@
       {'breakout_main_room', binary()} |
       {'timer_end_time', binary()} |
       {'timer_initiator', binary()} |
-      {'facedetect', boolean() | undefined}.
+      {'facedetect', boolean() | undefined} |
+      {'created_timestamp', binary()}.
 -type form() :: [form_property() | xdata_field()].
 
 -type error_reason() :: {form_type_mismatch, binary()} |

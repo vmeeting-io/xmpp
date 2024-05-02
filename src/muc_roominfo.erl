@@ -89,7 +89,8 @@
               breakout_main_room |
               timer_end_time |
               timer_initiator |
-              facedetect]) -> [xdata_field()].
+              facedetect |
+              created_timestamp]) -> [xdata_field()].
 
 dec_int(Val) -> dec_int(Val, infinity, infinity).
 
@@ -308,6 +309,11 @@ encode(List, Lang, Required) ->
                   [encode_facedetect(Val,
                                      Lang,
                                      lists:member(facedetect, Required))];
+              {created_timestamp, Val} ->
+                  [encode_created_timestamp(Val,
+                                            Lang,
+                                            lists:member(created_timestamp,
+                                                         Required))];
               #xdata_field{} -> [Opt]
           end
           || Opt <- List],
@@ -1170,6 +1176,46 @@ do_decode([#xdata_field{var =
                   {too_many_values,
                    <<"muc#roominfo_facedetect">>,
                    XMLNS}});
+do_decode([#xdata_field{var =
+                            <<"muc#roominfo_created_timestamp">>,
+                        values = [Value]}
+           | Fs],
+          XMLNS, Required, Acc) ->
+    try Value of
+        Result ->
+            do_decode(Fs,
+                      XMLNS,
+                      lists:delete(<<"muc#roominfo_created_timestamp">>,
+                                   Required),
+                      [{created_timestamp, Result} | Acc])
+    catch
+        _:_ ->
+            erlang:error({?MODULE,
+                          {bad_var_value,
+                           <<"muc#roominfo_created_timestamp">>,
+                           XMLNS}})
+    end;
+do_decode([#xdata_field{var =
+                            <<"muc#roominfo_created_timestamp">>,
+                        values = []} =
+               F
+           | Fs],
+          XMLNS, Required, Acc) ->
+    do_decode([F#xdata_field{var =
+                                 <<"muc#roominfo_created_timestamp">>,
+                             values = [<<>>]}
+               | Fs],
+              XMLNS,
+              Required,
+              Acc);
+do_decode([#xdata_field{var =
+                            <<"muc#roominfo_created_timestamp">>}
+           | _],
+          XMLNS, _, _) ->
+    erlang:error({?MODULE,
+                  {too_many_values,
+                   <<"muc#roominfo_created_timestamp">>,
+                   XMLNS}});
 do_decode([#xdata_field{var = Var} | Fs], XMLNS,
           Required, Acc) ->
     if Var /= <<"FORM_TYPE">> ->
@@ -1557,3 +1603,19 @@ encode_facedetect(Value, Lang, IsRequired) ->
                  options = Opts, desc = <<>>,
                  label =
                      xmpp_tr:tr(Lang, ?T("Is enabled face detect?"))}.
+
+-spec encode_created_timestamp(binary(), binary(),
+                               boolean()) -> xdata_field().
+
+encode_created_timestamp(Value, Lang, IsRequired) ->
+    Values = case Value of
+                 <<>> -> [];
+                 Value -> [Value]
+             end,
+    Opts = [],
+    #xdata_field{var = <<"muc#roominfo_created_timestamp">>,
+                 values = Values, required = IsRequired,
+                 type = 'text-single', options = Opts, desc = <<>>,
+                 label =
+                     xmpp_tr:tr(Lang,
+                                ?T("The meeting roominfo_created_timestamp."))}.

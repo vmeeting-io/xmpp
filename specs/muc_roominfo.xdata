@@ -125,6 +125,11 @@
       type='boolean'
       label='Is enabled face detect?'>
   </field>
+  <field
+      var='muc#roominfo_created_timestamp'
+      type='text-single'
+      label='The meeting roominfo_created_timestamp.'>
+  </field>
 </form_type>
 
 <!--
