@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%%
-%%% Copyright (C) 2002-2021 ProcessOne, SARL. All Rights Reserved.
+%%% Copyright (C) 2002-2024 ProcessOne, SARL. All Rights Reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -80,11 +80,12 @@
 -type stream_state() :: connecting | wait_for_stream | wait_for_features |
 			wait_for_starttls_response | wait_for_sasl_response |
 			wait_for_bind_response | wait_for_session_response |
-			downgraded | established | disconnected.
+			downgraded | established | disconnected | wait_for_handshake.
 -type noreply() :: {noreply, state(), timeout()}.
 -type next_state() :: noreply() | {stop, term(), state()}.
 -type host_port() :: {inet:hostname(), inet:port_number(), boolean()} | ip_port().
 -type ip_port() :: {inet:ip_address(), inet:port_number(), boolean()}.
+-type addr_info() :: {net:address_info(), boolean()}.
 -type h_addr_list() :: [{{integer(), integer(), inet:port_number(), string()}, boolean()}].
 -type network_error() :: {error, inet:posix() | atom()}.
 -type tls_error_reason() :: inet:posix() | atom() | binary().
@@ -314,6 +315,7 @@ init([Mod, From, To, Opts]) ->
 	      stream_direction => out,
 	      stream_timeout => current_time() + ?NEGOTIATION_TIMEOUT,
 	      stream_id => xmpp_stream:new_id(),
+	      stream_version => {1,0},
 	      stream_encrypted => false,
 	      stream_verified => false,
 	      stream_authenticated => false,
@@ -546,7 +548,7 @@ process_stream(#stream_start{version = {N, _}}, State) when N > 1 ->
     send_pkt(State, xmpp:serr_unsupported_version());
 process_stream(#stream_start{lang = Lang, id = ID,
 			     version = Version} = StreamStart,
-	       State) ->
+	       #{xmlns := NS} = State) ->
     State1 = State#{stream_remote_id => ID, lang => Lang},
     State2 = try callback(handle_stream_start, StreamStart, State1)
 	     catch _:{?MODULE, undef} -> State1
@@ -557,6 +559,10 @@ process_stream(#stream_start{lang = Lang, id = ID,
 	    case Version of
 		{1, _} ->
 		    State2#{stream_state => wait_for_features};
+		_ when NS == ?NS_COMPONENT ->
+		    Handshake = maps:get(handshake, State2, <<>>),
+		    send_pkt(State2#{stream_state => wait_for_handshake},
+			#handshake{data = Handshake});
 		_ ->
 		    process_stream_downgrade(StreamStart, State2)
 	    end
@@ -575,6 +581,8 @@ process_element(Pkt, #{stream_state := StateName} = State) ->
 	    process_sasl_failure(Pkt, State);
 	#stream_error{} ->
 	    process_stream_end({stream, {in, Pkt}}, State);
+	#handshake{} when StateName == wait_for_handshake ->
+	    process_stream_established(State);
 	_ when is_record(Pkt, stream_features);
 	       is_record(Pkt, starttls_proceed);
 	       is_record(Pkt, starttls);
@@ -907,6 +915,7 @@ sasl_mechanisms(#{stream_encrypted := Encrypted} = State) ->
 -spec send_header(state()) -> state().
 send_header(#{remote_server := RemoteServer,
 	      stream_encrypted := Encrypted,
+	      stream_version := Version,
 	      lang := Lang,
 	      xmlns := NS,
 	      user := User,
@@ -928,7 +937,7 @@ send_header(#{remote_server := RemoteServer,
 				db_xmlns = NS_DB,
 				from = From,
 				to = jid:make(RemoteServer),
-				version = {1,0}},
+				version = Version},
     case socket_send(State, StreamStart) of
 	ok -> State;
 	{error, Why} -> process_stream_end({socket, Why}, State)
@@ -1146,7 +1155,7 @@ idna_to_ascii(Host) ->
 	    end
     end.
 
--spec resolve(string(), state()) -> {ok, [ip_port()]} | network_error().
+-spec resolve(string(), state()) -> {ok, [ip_port()]} | {ok, [addr_info()]} | network_error().
 resolve(Host, State) ->
     try callback(resolve, Host, State) of
 	[] ->
@@ -1157,7 +1166,7 @@ resolve(Host, State) ->
 	    do_resolve(Host, State)
     end.
 
--spec do_resolve(string(), state()) -> {ok, [ip_port()]} | network_error().
+-spec do_resolve(string(), state()) -> {ok, [ip_port()]} | {ok, [addr_info()]} | network_error().
 do_resolve(Host, State) ->
     case srv_lookup(Host, State) of
 	{error, _Reason} ->
@@ -1226,15 +1235,71 @@ do_srv_lookup(_SRVName, _State, Retries) when Retries < 1 ->
     {error, timeout};
 do_srv_lookup(SRVName, State, Retries) ->
     Timeout = get_dns_timeout(State),
-    case inet_res:getbyname(SRVName, srv, Timeout) of
+    try inet_res:getbyname(SRVName, srv, Timeout) of
 	{ok, HostEntry} ->
 	    {ok, HostEntry};
 	{error, timeout} ->
 	    do_srv_lookup(SRVName, State, Retries - 1);
 	{error, _} = Err ->
 	    Err
+    catch _:_ -> % Workaround for https://github.com/erlang/otp/issues/4838 on older OTP
+	{error, nxdomain}
     end.
 
+
+-ifndef(USE_GETHOSTBYNAME).
+% New getaddrinfo based lookups (getaddrinfo available in OTP 22, but connect(SockAddr, ...) introduced in OTP 24.3)
+-spec a_lookup([host_port()], state()) ->
+		      {ok, [addr_info()]} | network_error().
+a_lookup(HostPorts, State) ->
+    a_lookup(HostPorts, State, [], {error, nxdomain}).
+
+-spec a_lookup([{inet:hostname() | inet:ip_address(), inet:port_number(),
+		 boolean()}],
+	       state(), [addr_info()], network_error()) -> {ok, [addr_info()]} | network_error().
+a_lookup([{Addr, Port, TLS}|HostPorts], State, Acc, Err)
+  when is_tuple(Addr) ->
+    a_lookup([{inet:ntoa(Addr), Port, TLS}|HostPorts], State, Acc, Err);
+a_lookup([{Host, Port, TLS}|HostPorts], State, Acc, Err) ->
+    Retries = get_dns_retries(State),
+    case a_lookup(Host, Port, TLS, State, Retries) of
+	{error, Reason} ->
+	    a_lookup(HostPorts, State, Acc, {error, Reason});
+	{ok, AddrPorts} ->
+	    a_lookup(HostPorts, State, Acc ++ AddrPorts, Err)
+    end;
+a_lookup([], _State, [], Err) ->
+    Err;
+a_lookup([], _State, Acc, _) ->
+    {ok, Acc}.
+
+-spec a_lookup(inet:hostname(), inet:port_number(), boolean(),
+	       state(), integer()) -> {ok, [addr_info()]} | network_error().
+a_lookup(_Host, _Port, _TLS, _State, Retries) when Retries < 1 ->
+    {error, timeout};
+a_lookup(Host, Port, TLS, State, Retries) ->
+    Timeout = get_dns_timeout(State),
+    Start = current_time(),
+    case net:getaddrinfo(Host, integer_to_list(Port)) of
+	{error, nxdomain} = Err ->
+	    %% net:getaddrinfo/2 doesn't return {error, timeout},
+	    %% so we should check if 'nxdomain' is in fact a result
+	    %% of a timeout.
+	    End = current_time(),
+	    if (End - Start) >= Timeout ->
+		    a_lookup(Host, Port, TLS, State, Retries - 1);
+	       true ->
+		    Err
+	    end;
+	{error, _} = Err ->
+	    Err;
+	{ok, AddressInfos} ->
+        FilteredAddressInfos  = [{Addr, TLSVal} || #{protocol := Protocol} = Addr <- AddressInfos, TLSVal <- [TLS], Protocol == tcp],
+        {ok, FilteredAddressInfos}
+    end.
+
+-else.
+% Old gethostbyname lookups
 -spec a_lookup([host_port()], state()) ->
 		      {ok, [ip_port()]} | network_error().
 a_lookup(HostPorts, State) ->
@@ -1295,6 +1360,23 @@ a_lookup(Host, Port, TLS, Family, State, Retries) ->
 	    host_entry_to_addr_ports(HostEntry, Port, TLS)
     end.
 
+-spec host_entry_to_addr_ports(inet:hostent(), inet:port_number(), boolean()) ->
+				      {ok, [ip_port()]} | {error, nxdomain}.
+host_entry_to_addr_ports(#hostent{h_addr_list = AddrList}, Port, TLS) ->
+    AddrPorts = lists:flatmap(
+		  fun(Addr) ->
+			  try get_addr_type(Addr) of
+			      _ -> [{Addr, Port, TLS}]
+			  catch _:_ ->
+				  []
+			  end
+		  end, AddrList),
+    case AddrPorts of
+	[] -> {error, nxdomain};
+	_ -> {ok, AddrPorts}
+    end.
+-endif.
+
 -spec h_addr_list_to_host_ports(h_addr_list()) -> {ok, [host_port(),...]} |
 						  {error, nxdomain}.
 h_addr_list_to_host_ports(AddrList) ->
@@ -1315,23 +1397,7 @@ h_addr_list_to_host_ports(AddrList) ->
 	_ -> {ok, HostPorts}
     end.
 
--spec host_entry_to_addr_ports(inet:hostent(), inet:port_number(), boolean()) ->
-				      {ok, [ip_port()]} | {error, nxdomain}.
-host_entry_to_addr_ports(#hostent{h_addr_list = AddrList}, Port, TLS) ->
-    AddrPorts = lists:flatmap(
-		  fun(Addr) ->
-			  try get_addr_type(Addr) of
-			      _ -> [{Addr, Port, TLS}]
-			  catch _:_ ->
-				  []
-			  end
-		  end, AddrList),
-    case AddrPorts of
-	[] -> {error, nxdomain};
-	_ -> {ok, AddrPorts}
-    end.
-
--spec connect([ip_port()], state()) -> {ok, term(), ip_port()} |
+-spec connect([ip_port() | addr_info()], state()) -> {ok, term(), ip_port()} |
 				       {error, {socket, socket_error_reason()}} |
 				       {error, {tls, tls_error_reason()}}.
 connect(AddrPorts, State) ->
@@ -1347,6 +1413,30 @@ connect(AddrPorts, State) ->
 	    {error, {socket, Why}}
     end.
 
+-ifndef(USE_GETHOSTBYNAME).
+-spec connect([addr_info()], state(), network_error()) ->
+		     {ok, term(), ip_port()} | network_error().
+connect([{#{family := Type, addr := SockAddr}, TLS}|AddressInfos], State, _) ->
+    #{addr := Addr, port := Port} = SockAddr,
+    Opts = [binary, {packet, 0},
+	    {send_timeout, ?TCP_SEND_TIMEOUT},
+	    {send_timeout_close, true},
+	    {active, false}, Type],
+    Opts1 = try callback(connect_options, Addr, Opts, State)
+	    catch _:{?MODULE, undef} -> Opts
+	    end,
+    Timeout = get_connect_timeout(State),
+    try xmpp_socket:connect(SockAddr, Port, Opts1, Timeout) of
+	{ok, Socket} ->
+	    {ok, Socket, {Addr, Port, TLS}};
+	Err ->
+	    connect(AddressInfos, State, Err)
+    catch _:badarg ->
+	    connect(AddressInfos, State, {error, einval})
+    end;
+connect([], _State, Err) ->
+    Err.
+-else.
 -spec connect([ip_port()], state(), network_error()) ->
 		     {ok, term(), ip_port()} | network_error().
 connect([{Addr, Port, TLS}|AddrPorts], State, _) ->
@@ -1373,6 +1463,7 @@ connect([], _State, Err) ->
 -spec get_addr_type(inet:ip_address()) -> inet:address_family().
 get_addr_type({_, _, _, _}) -> inet;
 get_addr_type({_, _, _, _, _, _, _, _}) -> inet6.
+-endif.
 
 -spec get_dns_timeout(state()) -> timeout().
 get_dns_timeout(State) ->
@@ -1394,11 +1485,13 @@ get_default_port(#{xmlns := NS} = State) ->
 	  _:{?MODULE, undef} when NS == ?NS_CLIENT -> 5222
     end.
 
+-ifdef(USE_GETHOSTBYNAME).
 -spec get_address_families(state()) -> [inet:address_family()].
 get_address_families(State) ->
     try callback(address_families, State)
     catch _:{?MODULE, undef} -> [inet, inet6]
     end.
+-endif.
 
 -spec get_connect_timeout(state()) -> timeout().
 get_connect_timeout(State) ->

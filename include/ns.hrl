@@ -1,6 +1,6 @@
 %%%----------------------------------------------------------------------
 %%%
-%%% Copyright (C) 2002-2021 ProcessOne, SARL. All Rights Reserved.
+%%% Copyright (C) 2002-2024 ProcessOne, SARL. All Rights Reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -175,9 +175,14 @@
 -define(NS_SIC_0, <<"urn:xmpp:sic:0">>).
 -define(NS_SIC_1, <<"urn:xmpp:sic:1">>).
 -define(NS_MIX_CORE_0, <<"urn:xmpp:mix:core:0">>).
+-define(NS_MIX_CORE_1, <<"urn:xmpp:mix:core:1">>).
 -define(NS_MIX_CORE_SEARCHABLE_0, <<"urn:xmpp:mix:core:0#searchable">>).
+-define(NS_MIX_CORE_SEARCHABLE_1, <<"urn:xmpp:mix:core:1#searchable">>).
 -define(NS_MIX_CORE_CREATE_CHANNEL_0, <<"urn:xmpp:mix:core:0#create-channel">>).
+-define(NS_MIX_CORE_CREATE_CHANNEL_1, <<"urn:xmpp:mix:core:1#create-channel">>).
 -define(NS_MIX_PAM_0, <<"urn:xmpp:mix:pam:0">>).
+-define(NS_MIX_PAM_2, <<"urn:xmpp:mix:pam:2">>).
+-define(NS_MIX_PAM_ARCHIVE_2, <<"urn:xmpp:mix:pam:2#archive">>).
 -define(NS_MIX_ROSTER_0, <<"urn:xmpp:mix:roster:0">>).
 -define(NS_MIX_NODES_MESSAGES, <<"urn:xmpp:mix:nodes:messages">>).
 -define(NS_MIX_NODES_PRESENCE, <<"urn:xmpp:mix:nodes:presence">>).
@@ -201,4 +206,11 @@
 -define(NS_PEP_VCARD_CONVERSION_0, <<"urn:xmpp:pep-vcard-conversion:0">>).
 -define(NS_BOOKMARKS_CONVERSION_0, <<"urn:xmpp:bookmarks-conversion:0">>).
 -define(NS_STORAGE_BOOKMARKS, <<"storage:bookmarks">>).
+-define(NS_PEP_BOOKMARKS, <<"urn:xmpp:bookmarks:1">>).
+-define(NS_PEP_BOOKMARKS_COMPAT, <<"urn:xmpp:bookmarks:1#compat">>).
+-define(NS_PEP_BOOKMARKS_COMPAT_PEP, <<"urn:xmpp:bookmarks:1#compat-pep">>).
 -define(NS_X509_0, <<"urn:xmpp:x509:0">>).
+-define(NS_HATS, <<"xmpp:prosody.im/protocol/hats:1">>).
+-define(NS_MESSAGE_MODERATE, <<"urn:xmpp:message-moderate:0">>).
+-define(NS_MESSAGE_RETRACT, <<"urn:xmpp:message-retract:1">>).
+-define(NS_OCCUPANT_ID, <<"urn:xmpp:occupant-id:0">>).

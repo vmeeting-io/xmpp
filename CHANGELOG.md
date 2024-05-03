@@ -1,3 +1,94 @@
+# Version 1.8.1
+
+* Updating fast_tls to version 1.1.19.
+
+# Version 1.8.0
+
+* Updating fast_tls to version 1.1.17.
+* Updating fast_xml to version 1.1.50.
+* Add support for xep-0474 - SASL SCRAM Downgrade Protection
+* Add support for xep-0388 - SASL2
+* Add support for xep-0386 - Bind 2
+* Add support for xep-0440 - SASL Channel-Binding Type Capability
+* Update support for xep-0424 to versuib 0.4.0
+* Allow disabling scram downgrade protection
+* Extend xmpp_stream_out to allow use as component implementation
+* Make handling of extra attributes in scram exchange better follow spec
+* Add support for tls-unique and tls-server-end-point channel binding
+* Fix compilation on arch where char is unsigned
+
+# 1.7.0
+
+* Add support for  xep-0421 - MUC Occupant Id
+* Accept all node config options in pubsub publish options
+* Update bundled rebar
+* Fix compilation on Erlang 26
+* Add automatic update of files on specs change
+* Add support for  xep-0402 - PEP Native Bookmarks
+* Fix types of pubsub publish options
+
+# Version 1.6.2
+
+* Add decoders for xep-0422 - Message Fastening
+* Add decoders for xep-0424 - Message Retraction
+* Add decoders for xep-0425 - Message Moderation
+
+# Version 1.6.1
+
+* Apply change introduced in XEP-0060 Version 1.23.0
+* Use net:getaddrinfo for hostname resolution
+
+# Version 1.6.0
+
+* Updating fast_tls to version 1.1.16.
+* Updating stringprep to version 1.0.29.
+* Support additional namespaces in MIX elements
+* Add support for MIX presences, update_subscriptions and unsubscribe
+* Add allow_query_users to muc config
+
+# Version 1.5.8
+
+* Updating fast_tls to version 1.1.15.
+* Updating ezlib to version 1.0.12.
+
+# Version 1.5.7
+
+* Updating ezlib to version 1.0.11.
+* Updating fast_tls to version 1.1.14.
+* Updating fast_xml to version 1.1.49.
+* Updating stringprep to version 1.0.28.
+* Updating p1_utils to version 1.0.25.
+* Make socket release on detach, free resources earlier
+* Fix crash when doing srv resolution
+
+# Version 1.5.6
+
+* Updating fast_xml to version 1.1.48.
+
+# Version 1.5.5
+
+* Updating fast_xml to version 1.1.47.
+* Allow 'max' value in pubsub max_items, item_expire and children_max
+* Add compatibility quirk for old smack version in roster
+* Don't generate code attribute in errors (deprececed by rfc6120)
+* Change internal representation of markable element
+* Add MUC hats support
+* Generate documentation before publishing to hex
+* 
+
+# Version 1.5.4
+
+* Updating ezlib to version 1.0.10.
+* Updating fast_tls to version 1.1.13.
+* Updating fast_xml to version 1.1.47.
+* Updating stringprep to version 1.0.27.
+* Updating p1_utils to version 1.0.23.
+* Switch from using Travis to Github Actions as CI
+* Add support for MIX roster extension
+* Allow children inside address element
+* Make compatible with OTP24
+* Allow arbitrary children inside vCard
+
 # Version 1.5.3
 
 * Updating fast_tls to version 1.1.12.
@@ -14,9 +105,9 @@
 * Allow to free socket/parser/tls when session get detached
 * Add support for XEP-0430: Inbox
 * Add support for XEP-0333: Chat Markers
-* Add missing applicaitons to xmpp.app
+* Add missing applications to xmpp.app
 * Fix timezone in timestamp used by XEP-0202
-* Don't throw exception when client send invalid lenght sasl response
+* Don't throw exception when client send invalid length sasl response
 
 # Version 1.5.1
 
@@ -162,7 +253,7 @@
 
 * Updating fast_tls to version 1.0.26.
 * Add support for XEP-0048 and XEP-0411
-* Add logging of data transmited over xml sockets
+* Add logging of data transmitted over xml sockets
 * Add functions for processing white space pings
 * Validate xml:lang values
 * Fix encoding of timestamp with negative TZ offsets
@@ -352,7 +443,7 @@ Evgeniy Khramtsov:
 
 # Version 1.1.4
 
-* Support for password on MUC subcribe (Badlop)
+* Support for password on MUC subscribe (Badlop)
 
 # Version 1.1.3
 

@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%%
-%%% Copyright (C) 2002-2021 ProcessOne, SARL. All Rights Reserved.
+%%% Copyright (C) 2002-2024 ProcessOne, SARL. All Rights Reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -46,7 +46,12 @@
 	 sockname/1,
 	 peername/1,
 	 get_query/1,
-	 send_ws_ping/1, get_negotiated_cipher/1, get_tls_last_message/2]).
+	 send_ws_ping/1,
+	 get_negotiated_cipher/1,
+	 get_tls_last_message/2,
+	 release/1,
+	 get_tls_cb_exporter/1,
+	 get_tls_cert_hash/1]).
 
 -include("xmpp.hrl").
 -include_lib("public_key/include/public_key.hrl").
@@ -68,7 +73,8 @@
 		       max_stanza_size   :: timeout(),
 		       xml_stream :: undefined | fxml_stream:xml_stream_state(),
 		       shaper = none :: none | p1_shaper:state(),
-		       sock_peer_name = none :: none | {endpoint(), endpoint()}}).
+		       sock_peer_name = none :: none | {endpoint(), endpoint()},
+		       tls_certfile = none :: none | binary()}).
 
 -type socket_state() :: #socket_state{}.
 
@@ -123,7 +129,7 @@ connect(Addr, Port, Opts, Timeout) ->
     connect(Addr, Port, Opts, Timeout, self()).
 
 connect(Addr, Port, Opts, Timeout, Owner) ->
-    case gen_tcp:connect(Addr, Port, Opts, Timeout) of
+    case do_connect(Addr, Port, Opts, Timeout) of
 	{ok, Socket} ->
 	    SocketData = new(gen_tcp, Socket, []),
 	    case controlling_process(SocketData, Owner) of
@@ -138,6 +144,29 @@ connect(Addr, Port, Opts, Timeout, Owner) ->
 	    Error
     end.
 
+-ifndef(USE_ADDRPORTCONNECT).
+do_connect(Addr, Port, Opts, Timeout)
+    when is_tuple(Addr) orelse
+         is_list(Addr)  orelse
+         is_atom(Addr)  orelse
+         (Addr =:= any) orelse
+         (Addr =:= loopback) ->
+        gen_tcp:connect(Addr, Port, Opts, Timeout);
+do_connect(SockAddr, _Port, Opts, Timeout) ->
+        gen_tcp:connect(SockAddr, Opts, Timeout).
+-else.
+do_connect(Addr, Port, Opts, Timeout)
+    when is_tuple(Addr) orelse
+         is_list(Addr)  orelse
+         is_atom(Addr)  orelse
+         (Addr =:= any) orelse
+         (Addr =:= loopback) ->
+        gen_tcp:connect(Addr, Port, Opts, Timeout);
+do_connect(SockAddr, _Port, Opts, Timeout) ->
+        #{addr := Addr, port := Port} = SockAddr,
+        gen_tcp:connect(Addr, Port, Opts, Timeout).
+-endif.
+
 -spec starttls(socket_state(), [proplists:property()]) ->
 		      {ok, socket_state()} |
 		      {error, inet:posix() | atom() | binary()}.
@@ -146,7 +175,8 @@ starttls(#socket_state{sockmod = gen_tcp,
     case fast_tls:tcp_to_tls(Socket, TLSOpts) of
 	{ok, TLSSocket} ->
 	    SocketData1 = SocketData#socket_state{socket = TLSSocket,
-						  sockmod = fast_tls},
+						  sockmod = fast_tls,
+						  tls_certfile = proplists:get_value(certfile, TLSOpts, none)},
 	    SocketData2 = reset_stream(SocketData1),
 	    case fast_tls:recv_data(TLSSocket, <<>>) of
 		{ok, TLSData} ->
@@ -332,6 +362,36 @@ get_peer_certificate(#socket_state{sockmod = SockMod,
 	false -> error
     end.
 
+-spec get_tls_cert_hash(socket_state()) -> {ok, binary()} | error.
+get_tls_cert_hash(#socket_state{tls_certfile = none}) ->
+    error;
+get_tls_cert_hash(#socket_state{tls_certfile = Path}) ->
+    case file:read_file(Path) of
+	{ok, Content} ->
+	    try lists:keyfind('Certificate', 1, public_key:pem_decode(Content)) of
+		{'Certificate', Cert, not_encrypted} ->
+		    try public_key:pkix_decode_cert(Cert, otp) of
+			#'OTPCertificate'{signatureAlgorithm = #'SignatureAlgorithm'{algorithm = Algo}} ->
+			    Hash = case public_key:pkix_sign_types(Algo) of
+				{sha, _} -> sha256;
+				{md5, _} -> sha256;
+				{Hash2, _} -> Hash2
+			    end,
+			    {ok, crypto:hash(Hash, Cert)};
+			_ ->
+			    error
+		    catch _:_ ->
+			error
+		    end;
+		_ ->
+		    error
+	    catch _:_ ->
+		error
+	    end;
+	_ ->
+	    error
+    end.
+
 -spec get_negotiated_cipher(socket_state()) -> {ok, binary()} | error.
 get_negotiated_cipher(#socket_state{sockmod = SockMod,
 				    socket = Socket}) ->
@@ -348,11 +408,26 @@ get_tls_last_message(#socket_state{sockmod = SockMod,
 	false -> {error, unavailable}
     end.
 
+-spec get_tls_cb_exporter(socket_state()) -> {ok, binary()} | {error, term()}.
+get_tls_cb_exporter(#socket_state{sockmod = SockMod,
+				  socket = Socket}) ->
+    case erlang:function_exported(SockMod, get_tls_cb_exporter, 1) of
+	true -> SockMod:get_tls_cb_exporter(Socket);
+	false -> {error, unavailable}
+    end.
+
 get_verify_result(SocketData) ->
     fast_tls:get_verify_result(SocketData#socket_state.socket).
 
 close(#socket_state{sockmod = SockMod, socket = Socket}) ->
     SockMod:close(Socket).
+
+release(#socket_state{xml_stream = XMLStream} = State) ->
+    close(State),
+    case XMLStream of
+	undefined -> ok;
+	_ -> fxml_stream:close(XMLStream)
+    end.
 
 -spec sockname(socket_state()) -> {ok, endpoint()} | {error, inet:posix()}.
 sockname(#socket_state{sockmod = SockMod,

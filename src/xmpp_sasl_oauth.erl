@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%%
-%%% Copyright (C) 2002-2021 ProcessOne, SARL. All Rights Reserved.
+%%% Copyright (C) 2002-2024 ProcessOne, SARL. All Rights Reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 -behaviour(xmpp_sasl).
 -author('alexey@process-one.net').
 
--export([mech_new/6, mech_step/2, format_error/1]).
+-export([mech_new/7, mech_step/2, format_error/1]).
 %% For tests
 -export([parse/1]).
 
@@ -34,7 +34,7 @@ format_error(parser_failed) ->
 format_error(not_authorized) ->
     {'not-authorized', <<"Invalid token">>}.
 
-mech_new(_Mech, _Socket, Host, _GetPassword, CheckPassword, _CheckPasswordDigest) ->
+mech_new(_Mech, _CB, _Mechs, Host, _GetPassword, CheckPassword, _CheckPasswordDigest) ->
     #state{host = Host, check_password = CheckPassword}.
 
 mech_step(State, ClientIn) ->

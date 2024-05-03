@@ -71,7 +71,7 @@
            xmlns = <<"jabber:iq:roster">>,
 	   module = rfc6121,
            result = {roster_item, '$jid', '$name',
-                     '$groups', '$subscription', '$ask'},
+                     '$groups', '$subscription', '$ask', '$mix_channel'},
            attrs = [#attr{name = <<"jid">>,
                           required = true,
                           dec = {jid, decode, []},
@@ -80,20 +80,24 @@
 			  default = <<"">>},
                     #attr{name = <<"subscription">>,
                           default = none,
+                          always_encode = true,
                           enc = {enc_enum, []},
                           dec = {dec_enum, [[none,to,from,both,remove]]}},
                     #attr{name = <<"ask">>,
                           enc = {enc_enum, []},
                           dec = {dec_enum, [[subscribe]]}}],
-           refs = [#ref{name = roster_group, label = '$groups'}]}).
+           refs = [#ref{name = roster_group, label = '$groups'},
+                   #ref{name = mix_roster_channel, label = '$mix_channel', min = 0, max = 1}]}).
 
 -xml(roster_query,
      #elem{name = <<"query">>,
            xmlns = <<"jabber:iq:roster">>,
 	   module = rfc6121,
-           result = {roster_query, '$items', '$ver'},
+           result = {roster_query, '$items', '$ver', '$mix_annotate'},
            attrs = [#attr{name = <<"ver">>, default = undefined}],
-           refs = [#ref{name = roster_item, label = '$items'}]}).
+           refs = [#ref{name = roster_item, label = '$items'},
+                   #ref{name = mix_roster_annotate, label = '$mix_annotate',
+                        default = false, min = 0, max = 1}]}).
 
 -xml(rosterver_feature,
      #elem{name = <<"ver">>,
@@ -344,8 +348,7 @@
 	   module = 'xep0048',
            result = {bookmark_conference, '$name', '$jid',
                      '$autojoin', '$nick', '$password'},
-           attrs = [#attr{name = <<"name">>,
-                          required = true},
+           attrs = [#attr{name = <<"name">>},
                     #attr{name = <<"jid">>,
                           required = true,
                           dec = {jid, decode, []},
@@ -742,17 +745,13 @@
            xmlns = [<<"jabber:client">>, <<"jabber:server">>,
 		    <<"jabber:component:accept">>],
 	   module = rfc6120,
-           result = {stanza_error, '$type', '$code', '$by', '$reason', '$text', '$_els'},
+           result = {stanza_error, '$type', '$by', '$reason', '$text', '$_els'},
            attrs = [#attr{name = <<"type">>,
                           label = '$type',
                           required = true,
                           dec = {dec_enum, [[auth, cancel, continue,
                                              modify, wait]]},
                           enc = {enc_enum, []}},
-		    #attr{name = <<"code">>,
-			  label = '$code',
-			  enc = {enc_int, []},
-                          dec = {dec_int, [0, infinity]}},
                     #attr{name = <<"by">>,
 			  label = '$by',
 			  enc = {jid, encode, []},
@@ -3476,7 +3475,16 @@
 
 -xml(mix_subscribe,
      #elem{name = <<"subscribe">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
+	   module = 'xep0369',
+	   result = '$node',
+	   attrs = [#attr{name = <<"node">>,
+			  required = true,
+			  label = '$node'}]}).
+
+-xml(mix_unsubscribe,
+     #elem{name = <<"unsubscribe">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
 	   module = 'xep0369',
 	   result = '$node',
 	   attrs = [#attr{name = <<"node">>,
@@ -3485,14 +3493,14 @@
 
 -xml(mix_nick,
      #elem{name = <<"nick">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>, <<"urn:xmpp:mix:presence:0">>],
 	   module = 'xep0369',
 	   result = '$cdata',
 	   cdata = #cdata{required = true}}).
 
 -xml(mix_jid,
      #elem{name = <<"jid">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>, <<"urn:xmpp:mix:presence:0">>],
 	   module = 'xep0369',
 	   result = '$cdata',
 	   cdata = #cdata{required = true,
@@ -3508,22 +3516,35 @@
 
 -xml(mix_setnick,
      #elem{name = <<"setnick">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
 	   module = 'xep0369',
-	   result = {mix_setnick, '$nick'},
+	   result = {mix_setnick, '$nick', '$xmlns'},
+	   attrs = [#attr{name = <<"xmlns">>}],
 	   refs = [#ref{name = mix_nick, min = 1, max = 1,
 			label = '$nick'}]}).
 
+-xml(mix_update_subscription,
+     #elem{name = <<"update-subscription">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
+	   module = 'xep0369',
+	   result = {mix_update_subscription, '$xmlns', '$jid', '$subscribe', '$unsubscribe'},
+	   attrs = [#attr{name = <<"xmlns">>},
+		    #attr{name = <<"jid">>, label = '$jid',
+			  dec = {jid, decode, []}, enc = {jid, encode, []}}],
+	   refs = [#ref{name = mix_subscribe, min = 0, label = '$subscribe'},
+		   #ref{name = mix_unsubscribe, min = 0, label = '$unsubscribe'}]}).
+
 -xml(mix_join,
      #elem{name = <<"join">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
 	   module = 'xep0369',
-	   result = {mix_join, '$id', '$jid', '$nick', '$subscribe'},
+	   result = {mix_join, '$id', '$jid', '$nick', '$subscribe', '$xmlns'},
 	   attrs = [#attr{name = <<"id">>},
 		    #attr{name = <<"jid">>,
 			  label = '$jid',
 			  dec = {jid, decode, []},
-                          enc = {jid, encode, []}}],
+                          enc = {jid, encode, []}},
+		    #attr{name = <<"xmlns">>}],
 	   refs = [#ref{name = mix_subscribe, min = 0, label = '$subscribe'},
 		   #ref{name = mix_nick,
 			default = <<"">>,
@@ -3532,71 +3553,102 @@
 
 -xml(mix_client_join,
      #elem{name = <<"client-join">>,
-	   xmlns = <<"urn:xmpp:mix:pam:0">>,
+	   xmlns = [<<"urn:xmpp:mix:pam:0">>, <<"urn:xmpp:mix:pam:2">>],
 	   module = 'xep0405',
-	   result = {mix_client_join, '$channel', '$join'},
+	   result = {mix_client_join, '$channel', '$join', '$xmlns'},
 	   attrs = [#attr{name = <<"channel">>,
 			  dec = {jid, decode, []},
-			  enc = {jid, encode, []}}],
+			  enc = {jid, encode, []}},
+		    #attr{name = <<"xmlns">>}],
 	   refs = [#ref{name = mix_join, min = 1, max = 1, label = '$join'}]}).
 
 -xml(mix_leave,
      #elem{name = <<"leave">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
 	   module = 'xep0369',
-	   result = {mix_leave}}).
+	   result = {mix_leave, '$xmlns'},
+	   attrs = [#attr{name = <<"xmlns">>}]}).
 
 -xml(mix_client_leave,
      #elem{name = <<"client-leave">>,
-	   xmlns = <<"urn:xmpp:mix:pam:0">>,
+	   xmlns = [<<"urn:xmpp:mix:pam:0">>, <<"urn:xmpp:mix:pam:2">>],
 	   module = 'xep0405',
-	   result = {mix_client_leave, '$channel', '$leave'},
+	   result = {mix_client_leave, '$channel', '$leave', '$xmlns'},
 	   attrs = [#attr{name = <<"channel">>,
 			  dec = {jid, decode, []},
-			  enc = {jid, encode, []}}],
+			  enc = {jid, encode, []}},
+		    #attr{name = <<"xmlns">>}],
 	   refs = [#ref{name = mix_leave, min = 1, max = 1, label = '$leave'}]}).
 
 -xml(mix_participant,
      #elem{name = <<"participant">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
 	   module = 'xep0369',
-	   result = {mix_participant, '$jid', '$nick'},
+	   result = {mix_participant, '$jid', '$nick', '$xmlns'},
 	   attrs = [#attr{name = <<"jid">>,
 			  required = true,
 			  label = '$jid',
 			  dec = {jid, decode, []},
                           enc = {jid, encode, []}},
 		    #attr{name = <<"nick">>,
-			  label = '$nick'}]}).
+			  label = '$nick'},
+		    #attr{name = <<"xmlns">>}]}).
 
 -xml(mix_create,
      #elem{name = <<"create">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
 	   module = 'xep0369',
-	   result = {mix_create, '$channel'},
+	   result = {mix_create, '$channel', '$xmlns'},
 	   attrs = [#attr{name = <<"channel">>,
 			  default = <<"">>,
-			  dec = {nodeprep, []}}]}).
+			  dec = {nodeprep, []}},
+		    #attr{name = <<"xmlns">>}]}).
 
 -xml(mix_destroy,
      #elem{name = <<"destroy">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
 	   module = 'xep0369',
-	   result = {mix_destroy, '$channel'},
+	   result = {mix_destroy, '$channel', '$xmlns'},
 	   attrs = [#attr{name = <<"channel">>,
 			  dec = {jid, nodeprep, []},
-			  required = true}]}).
+			  required = true},
+		    #attr{name = <<"xmlns">>}]}).
 
 -xml(mix,
      #elem{name = <<"mix">>,
-	   xmlns = <<"urn:xmpp:mix:core:0">>,
+	   xmlns = [<<"urn:xmpp:mix:core:0">>, <<"urn:xmpp:mix:core:1">>],
 	   module = 'xep0369',
-	   result = {mix, '$submission_id', '$jid', '$nick'},
+	   result = {mix, '$submission_id', '$jid', '$nick', '$xmlns'},
+	   attrs = [#attr{name = <<"xmlns">>}],
 	   refs = [#ref{name = mix_submission_id, default = <<"">>,
 			min = 0, max = 1, label = '$submission_id'},
 		   #ref{name = mix_jid,	min = 0, max = 1, label = '$jid'},
 		   #ref{name = mix_nick, min = 0, max = 1,
 			label = '$nick', default = <<"">>}]}).
+
+-xml(mix_roster_channel,
+     #elem{name = <<"channel">>,
+           xmlns = <<"urn:xmpp:mix:roster:0">>,
+           module = 'xep0405',
+           result = {mix_roster_channel, '$participant_id'},
+           attrs = [#attr{name = <<"participant-id">>, label = '$participant_id',
+                          required = true}]}).
+
+-xml(mix_roster_annotate,
+     #elem{name  = <<"annotate">>,
+           xmlns = <<"urn:xmpp:mix:roster:0">>,
+           module = 'xep0405',
+           result = true}).
+
+-xml(mix_presence,
+     #elem{name = <<"mix">>,
+	   xmlns = [<<"urn:xmpp:mix:presence:0">>],
+	   module = 'xep0403',
+	   result = {mix_presence, '$xmlns', '$jid', '$nick'},
+	   attrs = [#attr{name = <<"xmlns">>}],
+	   refs = [#ref{name = mix_jid,	min = 0, max = 1, label = '$jid'},
+		   #ref{name = mix_nick, min = 0, max = 1, label = '$nick',
+			default = <<"">>}]}).
 
 -record(hint, {type :: 'no-copy' | 'no-store' | 'no-storage' | 'store' |
 		       'no-permanent-store' | 'no-permanent-storage'}).
@@ -4027,7 +4079,7 @@
      #elem{name = <<"x">>,
 	   xmlns = <<"jabber:x:oob">>,
 	   module = 'xep0066',
-	   result = {oob_x, '$url', '$desc', '$sid'},
+	   result = {oob_x, '$url', '$desc', '$sid', '$_els'},
 	   attrs = [#attr{name = <<"sid">>, default = <<"">>}],
 	   refs = [#ref{name = oob_url, min = 1, max = 1,
 			label = '$url'},
@@ -4051,7 +4103,7 @@
      #elem{name = <<"markable">>,
 	   xmlns = <<"urn:xmpp:chat-markers:0">>,
 	   module = 'xep0333',
-	   result = true}).
+	   result = {markable}}).
 
 -xml(mark_received,
      #elem{name = <<"received">>,
@@ -5042,6 +5094,400 @@
 	   xmlns = <<"urn:xmpp:x509:0">>,
 	   module = 'xep0417',
 	   result = {x509_register}}).
+
+-xml(muc_hats,
+     #elem{name = <<"hats">>,
+	   xmlns = <<"xmpp:prosody.im/protocol/hats:1">>,
+	   module = 'xep0317',
+	   result = {muc_hats, '$hats'},
+	   refs = [#ref{name = muc_hat, label = '$hats'}]}).
+
+-xml(muc_hat,
+     #elem{name = <<"hat">>,
+	   xmlns = <<"xmpp:prosody.im/protocol/hats:1">>,
+	   module = 'xep0317',
+	   result = {muc_hat, '$title', '$uri'},
+           attrs = [#attr{name = <<"title">>,
+                          required = true},
+                    #attr{name = <<"uri">>,
+                          required = true}]}).
+
+-xml(occupant_id,
+     #elem{name = <<"occupant-id">>,
+	   xmlns = <<"urn:xmpp:occupant-id:0">>,
+	   module = 'xep0421',
+	   result = {occupant_id, '$id'},
+	   attrs = [#attr{name = <<"id">>,
+	                  required = true}]}).
+
+-xml(fasten_apply_to,
+     #elem{name = <<"apply-to">>,
+	   xmlns = <<"urn:xmpp:fasten:0">>,
+	   module = 'xep0422',
+	   result = {fasten_apply_to, '$id', '$external', '$_els'},
+	   attrs = [#attr{name = <<"id">>,
+	                  required = true}],
+	   refs = [#ref{name = fasten_external, min = 0, max = 1,
+	                label = '$external'}]}).
+
+-xml(fasten_external,
+     #elem{name = <<"external">>,
+	   xmlns = <<"urn:xmpp:fasten:0">>,
+	   module = 'xep0422',
+	   result = {fasten_external, '$name'},
+           attrs = [#attr{name = <<"name">>,
+                          required = true}]}).
+
+-xml(message_retract,
+     #elem{name = <<"retract">>,
+	   xmlns = <<"urn:xmpp:message-retract:1">>,
+	   module = 'xep0424',
+	   result = {message_retract, '$id'},
+	   attrs = [#attr{name = <<"id">>,
+	                  required = true}]}).
+
+-xml(message_retracted,
+     #elem{name = <<"retracted">>,
+	   xmlns = <<"urn:xmpp:message-retract:1">>,
+	   module = 'xep0424',
+	   result = {message_retracted, '$id', '$by', '$from', '$stamp', '$_els'},
+           attrs = [#attr{name = <<"id">>,
+	                  required = true},
+                    #attr{name = <<"by">>,
+                          enc = {jid, encode, []},
+                          dec = {jid, decode, []}},
+                    #attr{name = <<"from">>},
+                    #attr{name = <<"stamp">>,
+                          required = true,
+                          dec = {dec_utc, []},
+                          enc = {enc_utc, []}}]}).
+
+-xml(message_moderate,
+     #elem{name = <<"moderate">>,
+	   xmlns = <<"urn:xmpp:message-moderate:0">>,
+	   module = 'xep0425',
+	   result = {message_moderate, '$reason', '$retract'},
+	   refs = [#ref{name = message_moderate_reason, min = 0, max = 1,
+	                label = '$reason'},
+	           #ref{name = message_retract, min = 0, max = 1,
+	                label = '$retract'}]}).
+
+-xml(message_moderated,
+     #elem{name = <<"moderated">>,
+	   xmlns = <<"urn:xmpp:message-moderate:0">>,
+	   module = 'xep0425',
+	   result = {message_moderated, '$by', '$reason', '$retract', '$_els'},
+           attrs = [#attr{name = <<"by">>,
+                          enc = {jid, encode, []},
+                          dec = {jid, decode, []}}],
+	   refs = [#ref{name = message_moderate_reason, min = 0, max = 1,
+	                label = '$reason'},
+	           #ref{name = message_retract, min = 0, max = 1,
+	                label = '$retract'}]}).
+
+-xml(message_moderate_reason,
+     #elem{name = <<"reason">>,
+	   xmlns = <<"urn:xmpp:message-moderate:0">>,
+	   module = 'xep0425',
+	   result = '$cdata'}).
+
+-xml(pep_conference_nick,
+     #elem{name = <<"nick">>,
+           xmlns = <<"urn:xmpp:bookmarks:1">>,
+	   module = 'xep0402',
+           result = '$cdata'}).
+
+-xml(pep_conference_password,
+     #elem{name = <<"password">>,
+           xmlns = <<"urn:xmpp:bookmarks:1">>,
+	   module = 'xep0402',
+           result = '$cdata'}).
+
+-xml(pep_conference_extensions,
+     #elem{name = <<"extensions">>,
+           xmlns = <<"urn:xmpp:bookmarks:1">>,
+	   module = 'xep0402',
+           ignore_els = true,
+           result = '$_els'}).
+
+-xml(pep_bookmarks_conference,
+     #elem{name = <<"conference">>,
+           xmlns = <<"urn:xmpp:bookmarks:1">>,
+	   module = 'xep0402',
+           result = {pep_bookmarks_conference, '$name',
+                     '$autojoin', '$nick', '$password', '$extensions'},
+           attrs = [#attr{name = <<"name">>},
+                    #attr{name = <<"autojoin">>,
+                          default = false,
+                          dec = {dec_bool, []},
+                          enc = {enc_bool, []}}],
+           refs = [#ref{name = pep_conference_nick,
+                        label = '$nick',
+                        min = 0, max = 1},
+                   #ref{name = pep_conference_password,
+                        label = '$password',
+                        min = 0, max = 1},
+                   #ref{name = pep_conference_extensions,
+                        label = '$extensions',
+                        min = 0, max = 1}]}).
+
+-xml(sasl_channel_binding,
+     #elem{name = <<"sasl-channel-binding">>,
+           xmlns = <<"urn:xmpp:sasl-cb:0">>,
+	   module = 'xep0440',
+           result = {sasl_channel_binding, '$bindings'},
+           refs = [#ref{name = sasl_channel_binding_element,
+                        label = '$bindings',
+                        min = 0}]}).
+
+-xml(sasl_channel_binding_element,
+     #elem{name = <<"channel-binding">>,
+           xmlns = <<"urn:xmpp:sasl-cb:0">>,
+	   module = 'xep0440',
+           attrs = [#attr{name = <<"type">>, required = true}],
+           result = '$type'}).
+
+-xml(sasl2_authentication,
+     #elem{name = <<"authentication">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+	   refs = [#ref{name = sasl2_mechanism,
+                        label = '$mechanisms',
+                        min = 0},
+		   #ref{name = sasl2_inline,
+		        label = '$inline',
+		        min = 0, max = 1}],
+           result = {sasl2_authenticaton, '$mechanisms', '$inline'}}).
+
+-xml(sasl2_mechanism,
+     #elem{name = <<"mechanism">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           result = '$cdata'}).
+
+-xml(sasl2_inline,
+     #elem{name = <<"inline">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           result = '$_els'}).
+
+-xml(sasl2_authenticate,
+     #elem{name = <<"authenticate">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           attrs = [#attr{name = <<"mechanism">>, required = true}],
+	   refs = [#ref{name = sasl2_initial_response,
+                        label = '$initial_response',
+                        min = 0, max = 1},
+		   #ref{name = sasl2_user_agent,
+		        label = '$user_agent',
+		        min = 0, max = 1}],
+           result = {sasl2_authenticate, '$mechanism', '$initial_response', '$user_agent', '$_els'}}).
+
+-xml(sasl2_initial_response,
+     #elem{name = <<"initial-response">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           cdata = #cdata{label = '$text',
+                          dec = {base64, mime_decode, []},
+                          enc = {base64, encode, []}},
+           result = '$text'}).
+
+-xml(sasl2_user_agent,
+     #elem{name = <<"user-agent">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           attrs = [#attr{name = <<"id">>}],
+	   refs = [#ref{name = sasl2_user_agent_software,
+                        label = '$software',
+                        min = 0, max = 1},
+		   #ref{name = sasl2_user_agent_device,
+		        label = '$device',
+		        min = 0, max = 1}],
+           result = {sasl2_user_agent, '$id', '$software', '$device'}}).
+
+-xml(sasl2_user_agent_software,
+     #elem{name = <<"software">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           result = '$cdata'}).
+
+-xml(sasl2_user_agent_device,
+     #elem{name = <<"device">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           result = '$cdata'}).
+
+-xml(sasl2_challenge,
+     #elem{name = <<"challenge">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           cdata = #cdata{label = '$text',
+                          dec = {base64, mime_decode, []},
+                          enc = {base64, encode, []}},
+           result = {sasl2_challenge, '$text'}}).
+
+-xml(sasl2_response,
+     #elem{name = <<"response">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           cdata = #cdata{label = '$text',
+                          dec = {base64, mime_decode, []},
+                          enc = {base64, encode, []}},
+           result = {sasl2_response, '$text'}}).
+
+-xml(sasl2_success,
+     #elem{name = <<"success">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+	   refs = [#ref{name = sasl2_additional_data,
+                        label = '$additional_data',
+                        min = 0, max = 1},
+		   #ref{name = sasl2_authorization_identifier,
+		        label = '$jid',
+		        min = 1, max = 1}],
+           result = {sasl2_success, '$jid', '$additional_data', '$_els'}}).
+
+-xml(sasl2_additional_data,
+     #elem{name = <<"additional-data">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           cdata = #cdata{label = '$text',
+                          dec = {base64, mime_decode, []},
+                          enc = {base64, encode, []}},
+           result = '$text'}).
+
+-xml(sasl2_authorization_identifier,
+     #elem{name = <<"authorization-identifier">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+	   cdata = #cdata{label = '$jid',
+	                  required = true,
+			  dec = {jid, decode, []},
+			  enc = {jid, encode, []}},
+           result = '$jid'}).
+
+-xml(sasl2_failure,
+     #elem{name = <<"failure">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+	   refs = [#ref{name = sasl2_text,
+                        label = '$text',
+                        min = 0, max = 1},
+                   #ref{name = sasl_failure_aborted,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_account_disabled,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_credentials_expired,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_encryption_required,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_incorrect_encoding,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_invalid_authzid,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_invalid_mechanism,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_malformed_request,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_mechanism_too_weak,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_not_authorized,
+                        min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_bad_protocol,
+			min = 0, max = 1, label = '$reason'},
+                   #ref{name = sasl_failure_temporary_auth_failure,
+                        min = 0, max = 1, label = '$reason'}],
+           result = {sasl2_failure, '$reason', '$text', '$_els'}}).
+
+-xml(sasl2_text,
+     #elem{name = <<"text">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           result = '$cdata'}).
+
+-xml(sasl2_continue,
+     #elem{name = <<"continue">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+	   refs = [#ref{name = sasl2_additional_data,
+	                label = '$additional_data',
+	                min = 0, max = 1},
+                   #ref{name = sasl2_text,
+                        label = '$text',
+                        min = 0, max = 1},
+                   #ref{name = sasl2_tasks,
+                        label = '$tasks',
+                        min = 0, max = 1}],
+           result = {sasl2_continue, '$additional_data', '$text', '$tasks', '$_els'}}).
+
+-xml(sasl2_tasks,
+     #elem{name = <<"tasks">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+	   refs = [#ref{name = sasl2_task,
+	                label = '$task',
+	                min = 0}],
+           result = '$task'}).
+
+-xml(sasl2_task,
+     #elem{name = <<"task">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+           cdata = #cdata{label = '$text',
+                          dec = {base64, mime_decode, []},
+                          enc = {base64, encode, []}},
+           result = '$text'}).
+
+-xml(sasl2_abort,
+     #elem{name = <<"abort">>,
+           xmlns = <<"urn:xmpp:sasl:2">>,
+	   module = 'xep0388',
+	   refs = [#ref{name = sasl2_text,
+                        label = '$text',
+                        min = 0, max = 1}],
+           result = {sasl2_abort, '$text', '$_els'}}).
+
+-xml(bind2_bind,
+     #elem{name = <<"bind">>,
+           xmlns = <<"urn:xmpp:bind:0">>,
+	   module = 'xep0386',
+	   refs = [#ref{name = bind2_inline,
+	                label = '$inline',
+	                min = 0, max = 1},
+                   #ref{name = bind2_tag,
+                        label = '$tag',
+                        min = 0, max = 1}],
+           result = {bind2_bind, '$tag', '$inline', '$_els'}}).
+
+-xml(bind2_inline,
+     #elem{name = <<"inline">>,
+           xmlns = <<"urn:xmpp:bind:0">>,
+	   module = 'xep0386',
+           result = '$_els'}).
+
+-xml(bind2_tag,
+     #elem{name = <<"tag">>,
+           xmlns = <<"urn:xmpp:bind:0">>,
+	   module = 'xep0386',
+	   cdata = #cdata{label = '$tag',
+	                  required = true},
+           result = '$tag'}).
+
+-xml(bind2_bound,
+     #elem{name = <<"bound">>,
+           xmlns = <<"urn:xmpp:bind:0">>,
+	   module = 'xep0386',
+           result = {bind2_bound, '$_els'}}).
+
+-xml(bind2_feature,
+     #elem{name = <<"feature">>,
+           xmlns = <<"urn:xmpp:bind:0">>,
+	   module = 'xep0386',
+	   attrs = [#attr{name = <<"var">>,
+	                  label = '$var',
+			  required = true}],
+           result = {bind2_feature, '$var'}}).
 
 -spec dec_tzo(_) -> {integer(), integer()}.
 dec_tzo(Val) ->

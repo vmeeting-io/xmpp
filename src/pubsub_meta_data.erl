@@ -588,7 +588,7 @@ do_decode([#xdata_field{var = <<"pubsub#max_items">>,
                         values = [Value]}
            | Fs],
           XMLNS, Required, Acc) ->
-    try dec_int(Value, 0, infinity) of
+    try xmpp_util:decode_limit(Value) of
         Result ->
             do_decode(Fs,
                       XMLNS,
@@ -856,15 +856,17 @@ encode_type(Value, Lang, IsRequired) ->
     #xdata_field{var = <<"pubsub#type">>, values = Values,
                  required = IsRequired, type = 'text-single',
                  options = Opts, desc = <<>>,
-                 label = xmpp_tr:tr(Lang, ?T("Payload type"))}.
+                 label =
+                     xmpp_tr:tr(Lang,
+                                ?T("Payload semantic type information"))}.
 
--spec encode_max_items(non_neg_integer() | undefined,
+-spec encode_max_items(xmpp_util:limit() | undefined,
                        binary(), boolean()) -> xdata_field().
 
 encode_max_items(Value, Lang, IsRequired) ->
     Values = case Value of
                  undefined -> [];
-                 Value -> [enc_int(Value)]
+                 Value -> [xmpp_util:encode_limit(Value)]
              end,
     Opts = [],
     #xdata_field{var = <<"pubsub#max_items">>,

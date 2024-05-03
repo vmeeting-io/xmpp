@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% @author Magnus Henoch <henoch@dtek.chalmers.se>
 %%%
-%%% Copyright (C) 2002-2021 ProcessOne, SARL. All Rights Reserved.
+%%% Copyright (C) 2002-2024 ProcessOne, SARL. All Rights Reserved.
 %%%
 %%% Licensed under the Apache License, Version 2.0 (the "License");
 %%% you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 -behaviour(xmpp_sasl).
 -protocol({xep, 175, '1.2'}).
 
--export([mech_new/6, mech_step/2, format_error/1]).
+-export([mech_new/7, mech_step/2]).
 
 -include_lib("xmpp.hrl").
 
@@ -33,7 +33,7 @@
 format_error(not_authorized) ->
     {'not-authorized', <<"Invalid jitsi jwt token">>}.
 
-mech_new(_Mech, Socket, Host, _GetPassword, _CheckPassword, _CheckPasswordDigest) ->
+mech_new(_Mech, Socket, _Mechs, Host, _GetPassword, _CheckPassword, _CheckPasswordDigest) ->
     #state{xmpp_socket = Socket, host = Host}.
 
 mech_step(#state{xmpp_socket = XmppSocket, host = Host}, _ClientIn) ->
