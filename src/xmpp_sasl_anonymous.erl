@@ -22,32 +22,14 @@
 
 -export([mech_new/7, mech_step/2]).
 
--include_lib("xmpp.hrl").
+-record(state, {server = <<"">> :: binary()}).
 
--record(state, {xmpp_socket ::xmpp_socket:socket_state(), host :: binary()}).
+mech_new(_Mech, _CB, _Mechs, Host, _GetPassword, _CheckPassword, _CheckPasswordDigest) ->
+    #state{server = Host}.
 
--type error_reason() :: not_authorized.
--export_type([error_reason/0]).
-
--spec format_error(error_reason()) -> {atom(), binary()}.
-format_error(not_authorized) ->
-    {'not-authorized', <<"Invalid jitsi jwt token">>}.
-
-mech_new(_Mech, Socket, _Mechs, Host, _GetPassword, _CheckPassword, _CheckPasswordDigest) ->
-    #state{xmpp_socket = Socket, host = Host}.
-
-mech_step(#state{xmpp_socket = XmppSocket, host = Host}, _ClientIn) ->
-    JWTResult = ejabberd_hooks:run_fold(check_jwt_token, Host, ok, [XmppSocket, Host]),
-
+mech_step(#state{}, _ClientIn) ->
     User = iolist_to_binary([p1_rand:get_string(),
                              integer_to_binary(p1_time_compat:unique_integer([positive]))]),
-
-    if JWTResult == ok ->
-        error_logger:info_msg("verification succeeded for ~p~n", [User]),
-        {ok, [{username, User},
-        {authzid, User},
-        {auth_module, anonymous}]};
-    true ->
-        error_logger:warning_msg("verification failed for ~p~n", [User]),
-        {error, not_authorized, User}
-    end.
+    {ok, [{username, User},
+	  {authzid, User},
+	  {auth_module, anonymous}]}.
