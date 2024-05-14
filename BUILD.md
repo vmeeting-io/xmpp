@@ -1,3 +1,7 @@
+## 환경 설정
+
+$ apt install esl-erlang=1:25.3-1
+
 ## xdata 컴파일
 
 $ REBAR=./rebar3 make xdata
