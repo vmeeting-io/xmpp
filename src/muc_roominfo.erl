@@ -1658,6 +1658,7 @@ encode_timer_initiator(Value, Lang, IsRequired) ->
 encode_facedetect(Value, Lang, IsRequired) ->
     Values = case Value of
                  undefined -> [];
+                 null -> [];
                  Value -> [enc_bool(Value)]
              end,
     Opts = [],
